@@ -61,41 +61,141 @@
 }
 
 /* Marketing landing page */
+.landing-page {
+    font-feature-settings: 'ss01' on, 'cv01' on;
+}
+
+.landing-display {
+    font-family: 'Instrument Sans', 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -0.03em;
+}
+
+.landing-gradient-text {
+    background: linear-gradient(135deg, #b45309 0%, #d97706 35%, #f59e0b 70%, #ea580c 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.landing-nav {
+    border: 1px solid transparent;
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(16px);
+    transition: border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+}
+
+.landing-nav--scrolled {
+    border-color: rgba(228, 228, 231, 0.9);
+    background: rgba(255, 255, 255, 0.88);
+    box-shadow: 0 10px 40px -20px rgba(24, 24, 27, 0.25);
+}
+
+.landing-btn-primary {
+    background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 55%, #d97706 100%);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.35) inset,
+        0 8px 24px -8px rgba(217, 119, 6, 0.55);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.landing-btn-primary:hover {
+    filter: brightness(1.03);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.4) inset,
+        0 12px 28px -8px rgba(217, 119, 6, 0.65);
+}
+
 .landing-hero {
-    background-color: #020617;
-}
-
-.landing-glow {
     background:
-        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(245, 158, 11, 0.18), transparent),
-        radial-gradient(ellipse 50% 40% at 100% 0%, rgba(217, 119, 6, 0.12), transparent),
-        radial-gradient(ellipse 40% 30% at 0% 50%, rgba(245, 158, 11, 0.08), transparent);
+        radial-gradient(ellipse 90% 60% at 50% -10%, rgba(251, 191, 36, 0.12), transparent 55%),
+        linear-gradient(180deg, #fafafa 0%, #f4f4f5 45%, #fafafa 100%);
 }
 
-.landing-grid {
-    background-image:
-        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-    background-size: 64px 64px;
+.landing-orb {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(80px);
+    pointer-events: none;
+}
+
+.landing-orb--1 {
+    top: -6rem;
+    left: -4rem;
+    width: 22rem;
+    height: 22rem;
+    background: rgba(251, 191, 36, 0.22);
+}
+
+.landing-orb--2 {
+    top: 8rem;
+    right: -6rem;
+    width: 26rem;
+    height: 26rem;
+    background: rgba(249, 115, 22, 0.12);
+}
+
+.landing-noise {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    mix-blend-mode: soft-light;
+}
+
+.landing-product-shell {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(244, 244, 245, 0.7));
+    box-shadow:
+        0 0 0 1px rgba(228, 228, 231, 0.8),
+        0 30px 60px -30px rgba(24, 24, 27, 0.25);
 }
 
 .landing-float {
-    animation: landing-float 6s ease-in-out infinite;
+    animation: landing-float 7s ease-in-out infinite;
 }
 
 .landing-float-delay {
-    animation: landing-float 6s ease-in-out 3s infinite;
+    animation: landing-float 7s ease-in-out 2.5s infinite;
 }
 
 @keyframes landing-float {
     0%, 100% {
         transform: translateY(0);
     }
+
     50% {
-        transform: translateY(-8px);
+        transform: translateY(-10px);
     }
 }
 
+.landing-reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.landing-reveal--visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.landing-card {
+    will-change: transform;
+}
+
+.landing-stat {
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.landing-stat:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px -20px rgba(24, 24, 27, 0.2);
+}
+
 .landing-cta {
-    background: linear-gradient(135deg, #78350f 0%, #b45309 40%, #d97706 100%);
+    position: relative;
+    isolation: isolate;
+    background: linear-gradient(145deg, #18181b 0%, #09090b 50%, #1c1917 100%);
+}
+
+.landing-cta-glow {
+    background:
+        radial-gradient(circle at 20% 20%, rgba(245, 158, 11, 0.18), transparent 45%),
+        radial-gradient(circle at 80% 80%, rgba(234, 88, 12, 0.12), transparent 40%);
 }
