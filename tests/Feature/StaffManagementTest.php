@@ -6,6 +6,7 @@ use App\Livewire\StaffIndex;
 use App\Models\Restaurant;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\RestaurantWorkspaceService;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -52,6 +53,8 @@ class StaffManagementTest extends TestCase
             'role_id' => $ownerRole->id,
             'is_active' => true,
         ]);
+
+        app(RestaurantWorkspaceService::class)->attach($this->owner, $restaurant, $ownerRole);
     }
 
     public function test_owner_can_add_staff_with_mobile_number_and_random_password(): void
@@ -74,6 +77,7 @@ class StaffManagementTest extends TestCase
         $this->assertSame($this->cashierRole->id, $staff->role_id);
         $this->assertSame('9876543210@staff.test-cafe.kotbean', $staff->email);
         $this->assertTrue($staff->is_active);
+        $this->assertTrue($staff->belongsToRestaurant($this->owner->restaurant_id));
     }
 
     public function test_staff_can_login_with_mobile_number(): void
@@ -101,12 +105,18 @@ class StaffManagementTest extends TestCase
 
     public function test_duplicate_mobile_number_is_rejected(): void
     {
-        User::factory()->create([
+        $existing = User::factory()->create([
             'restaurant_id' => $this->owner->restaurant_id,
             'role_id' => $this->cashierRole->id,
             'phone' => '9876543210',
             'is_active' => true,
         ]);
+
+        app(RestaurantWorkspaceService::class)->attach(
+            $existing,
+            $this->owner->restaurant,
+            $this->cashierRole,
+        );
 
         Livewire::actingAs($this->owner)
             ->test(StaffIndex::class)

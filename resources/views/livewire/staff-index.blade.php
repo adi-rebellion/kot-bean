@@ -4,7 +4,19 @@
         <button wire:click="create" type="button" class="w-full rounded-lg bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-600 sm:w-auto">Add Staff</button>
     </div>
 
-    @if ($generatedPassword)
+    @if ($invitedExisting)
+        <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <p class="font-semibold text-emerald-900">Access granted</p>
+                    <p class="mt-1 text-sm text-emerald-800">
+                        <span class="font-medium">{{ $createdStaffName }}</span> can now switch into this business from the sidebar.
+                    </p>
+                </div>
+                <button wire:click="dismissCredentials" type="button" class="shrink-0 rounded-lg px-2 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-100">Dismiss</button>
+            </div>
+        </div>
+    @elseif ($generatedPassword)
         <div class="rounded-xl border border-amber-200 bg-amber-50 p-4">
             <div class="flex items-start justify-between gap-3">
                 <div>
@@ -44,6 +56,11 @@
                     <input wire:model="phone" type="tel" inputmode="tel" placeholder="9876543210" class="w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
                     @error('phone') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Existing account email <span class="font-normal text-slate-400">(optional)</span></label>
+                    <input wire:model="email" type="email" placeholder="owner@another.cafe" class="w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
+                    @error('email') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                </div>
                 <div class="sm:col-span-2">
                     <label class="mb-1 block text-sm font-medium text-slate-700">Role</label>
                     <select wire:model="role_id" class="w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
@@ -55,7 +72,7 @@
                     @error('role_id') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
             </div>
-            <p class="text-xs text-slate-500">A random password will be generated automatically. Share it with the staff member after creation.</p>
+            <p class="text-xs text-slate-500">Leave email empty to create a new login with a generated password. Enter an existing KotBean email to give that person access so they can switch businesses.</p>
             <div class="flex flex-col gap-2 sm:flex-row">
                 <button type="submit" wire:loading.attr="disabled" class="rounded-lg bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-50">Create Staff</button>
                 <button wire:click="cancel" type="button" class="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700">Cancel</button>

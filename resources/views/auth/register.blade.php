@@ -2,16 +2,22 @@
     <div class="mb-8">
         <p class="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">Get started</p>
         <h2 class="landing-display mt-2 text-2xl font-semibold tracking-tight text-zinc-950">Create your KotBean account</h2>
-        <p class="mt-2 text-sm text-zinc-500">Set up in minutes. No credit card required.</p>
+        <p class="mt-2 text-sm text-zinc-500">Create your business and start taking orders in minutes.</p>
     </div>
 
     <form method="POST" action="{{ route('register') }}" class="space-y-5">
         @csrf
 
         <div>
-            <x-input-label for="name" :value="__('Name')" />
+            <x-input-label for="name" :value="__('Your name')" />
             <x-text-input id="name" class="mt-1.5 block w-full" type="text" name="name" :value="old('name')" required autofocus autocomplete="name" />
             <x-input-error :messages="$errors->get('name')" class="mt-2" />
+        </div>
+
+        <div>
+            <x-input-label for="business_name" :value="__('Business name')" />
+            <x-text-input id="business_name" class="mt-1.5 block w-full" type="text" name="business_name" :value="old('business_name')" required autocomplete="organization" />
+            <x-input-error :messages="$errors->get('business_name')" class="mt-2" />
         </div>
 
         <div>

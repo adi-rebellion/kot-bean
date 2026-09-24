@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\Restaurant;
+use Database\Seeders\PermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -15,13 +17,17 @@ class RegistrationTest extends TestCase
 
         $response->assertStatus(200)
             ->assertSee('Create your KotBean account')
+            ->assertSee('Business name')
             ->assertSee('Already have an account?');
     }
 
     public function test_new_users_can_register(): void
     {
+        $this->seed(PermissionSeeder::class);
+
         $response = $this->post('/register', [
             'name' => 'Test User',
+            'business_name' => 'Sunrise Café',
             'email' => 'test@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
@@ -29,5 +35,11 @@ class RegistrationTest extends TestCase
 
         $this->assertAuthenticated();
         $response->assertRedirect(route('dashboard', absolute: false));
+        $this->assertDatabaseHas('restaurants', ['name' => 'Sunrise Café']);
+
+        $restaurant = Restaurant::query()->where('name', 'Sunrise Café')->first();
+        $this->assertTrue(auth()->user()->belongsToRestaurant($restaurant->id));
+        $this->assertSame($restaurant->id, auth()->user()->restaurant_id);
+        $this->assertTrue(auth()->user()->isOwner());
     }
 }

@@ -20,6 +20,7 @@ use App\Models\Restaurant;
 use App\Models\RestaurantTable;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\RestaurantWorkspaceService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -87,8 +88,10 @@ class DemoRestaurantSeeder extends Seeder
             ['name' => 'Kumar Kitchen', 'email' => 'kitchen@beanbrew.cafe', 'role' => 'kitchen'],
         ];
 
+        $workspaces = app(RestaurantWorkspaceService::class);
+
         foreach ($users as $userData) {
-            User::create([
+            $user = User::create([
                 'restaurant_id' => $restaurant->id,
                 'role_id' => $roles[$userData['role']]->id,
                 'name' => $userData['name'],
@@ -96,6 +99,8 @@ class DemoRestaurantSeeder extends Seeder
                 'password' => Hash::make('password'),
                 'email_verified_at' => now(),
             ]);
+
+            $workspaces->attach($user, $restaurant, $roles[$userData['role']]);
         }
     }
 

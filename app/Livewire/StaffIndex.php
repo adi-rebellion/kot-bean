@@ -21,7 +21,11 @@ class StaffIndex extends Component
 
     public string $phone = '';
 
+    public string $email = '';
+
     public ?int $role_id = null;
+
+    public bool $invitedExisting = false;
 
     public ?string $generatedPassword = null;
 
@@ -35,25 +39,21 @@ class StaffIndex extends Component
         $this->generatedPassword = null;
         $this->createdStaffName = null;
         $this->createdStaffPhone = null;
+        $this->invitedExisting = false;
         $this->showForm = true;
     }
 
     public function save(): void
     {
-        $this->phone = app(StaffService::class)->normalizePhone($this->phone);
-
         $restaurantId = auth()->user()->restaurant_id;
+        $staffService = app(StaffService::class);
+        $memberIds = auth()->user()->restaurant
+            ->members()
+            ->pluck('users.id');
 
-        $data = $this->validate([
+        $this->validate([
             'name' => ['required', 'string', 'max:255'],
-            'phone' => [
-                'required',
-                'string',
-                'digits:10',
-                Rule::unique('users', 'phone')->where(
-                    fn ($query) => $query->where('restaurant_id', $restaurantId),
-                ),
-            ],
+            'email' => ['nullable', 'lowercase', 'email', 'exists:users,email'],
             'role_id' => [
                 'required',
                 Rule::exists('roles', 'id')->where(
@@ -62,8 +62,48 @@ class StaffIndex extends Component
             ],
         ]);
 
-        $result = app(StaffService::class)->create($data, auth()->user());
+        if ($this->email !== '') {
+            $existing = User::query()->where('email', $this->email)->firstOrFail();
+            $role = Role::query()->findOrFail($this->role_id);
 
+            try {
+                $result = $staffService->inviteExisting($existing, $role, auth()->user());
+            } catch (\InvalidArgumentException $exception) {
+                session()->flash('error', $exception->getMessage());
+
+                return;
+            }
+
+            $this->invitedExisting = true;
+            $this->generatedPassword = null;
+            $this->createdStaffName = $result['user']->name;
+            $this->createdStaffPhone = $result['user']->phone;
+            $this->showForm = false;
+            $this->resetForm();
+
+            return;
+        }
+
+        $this->phone = $staffService->normalizePhone($this->phone);
+
+        $data = $this->validate([
+            'phone' => [
+                'required',
+                'string',
+                'digits:10',
+                Rule::unique('users', 'phone')->where(
+                    fn ($query) => $query->whereIn('id', $memberIds),
+                ),
+            ],
+        ]);
+
+        $result = $staffService->create([
+            'name' => $this->name,
+            'phone' => $data['phone'],
+            'role_id' => $this->role_id,
+        ], auth()->user());
+
+        $this->invitedExisting = false;
         $this->generatedPassword = $result['password'];
         $this->createdStaffName = $result['user']->name;
         $this->createdStaffPhone = $result['user']->phone;
@@ -76,6 +116,7 @@ class StaffIndex extends Component
         $this->generatedPassword = null;
         $this->createdStaffName = null;
         $this->createdStaffPhone = null;
+        $this->invitedExisting = false;
     }
 
     public function cancel(): void
@@ -88,6 +129,7 @@ class StaffIndex extends Component
     {
         $this->name = '';
         $this->phone = '';
+        $this->email = '';
         $this->role_id = null;
     }
 
@@ -101,12 +143,21 @@ class StaffIndex extends Component
             $rolesQuery->where('slug', '!=', 'owner');
         }
 
+        $restaurant = auth()->user()->restaurant;
+        $rolesById = Role::query()
+            ->where('restaurant_id', $restaurant->id)
+            ->get()
+            ->keyBy('id');
+
+        $staff = $restaurant->members()
+            ->orderBy('name')
+            ->get()
+            ->each(function (User $member) use ($rolesById): void {
+                $member->setRelation('role', $rolesById->get($member->pivot->role_id));
+            });
+
         return view('livewire.staff-index', [
-            'staff' => User::query()
-                ->with('role')
-                ->where('restaurant_id', auth()->user()->restaurant_id)
-                ->orderBy('name')
-                ->get(),
+            'staff' => $staff,
             'roles' => $rolesQuery->get(),
         ]);
     }

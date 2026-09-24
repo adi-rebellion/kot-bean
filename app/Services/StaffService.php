@@ -12,6 +12,7 @@ class StaffService
 {
     public function __construct(
         private readonly AuditLogService $auditLogService,
+        private readonly RestaurantWorkspaceService $workspaces,
     ) {}
 
     /**
@@ -43,6 +44,8 @@ class StaffService
                 'is_active' => true,
             ]);
 
+            $this->workspaces->attach($user, $creator->restaurant, $role);
+
             $this->auditLogService->log(
                 'staff.created',
                 $user,
@@ -56,6 +59,40 @@ class StaffService
                 'password' => $password,
             ];
         });
+    }
+
+    /**
+     * @return array{user: User, password: ?string, invited: bool}
+     */
+    public function inviteExisting(User $existing, Role $role, User $creator): array
+    {
+        if ($role->restaurant_id !== $creator->restaurant_id) {
+            throw new InvalidArgumentException('Role does not belong to this business.');
+        }
+
+        if ($role->slug === 'owner' && ! $creator->isOwner()) {
+            throw new InvalidArgumentException('Only owners can assign the owner role.');
+        }
+
+        if ($existing->belongsToRestaurant($creator->restaurant_id)) {
+            throw new InvalidArgumentException('This person already has access to this business.');
+        }
+
+        $this->workspaces->attach($existing, $creator->restaurant, $role);
+
+        $this->auditLogService->log(
+            'staff.invited',
+            $existing,
+            null,
+            ['restaurant_id' => $creator->restaurant_id, 'role_id' => $role->id],
+            "{$existing->name} was given access to {$creator->restaurant->name}",
+        );
+
+        return [
+            'user' => $existing->fresh('role'),
+            'password' => null,
+            'invited' => true,
+        ];
     }
 
     public function normalizePhone(string $phone): string

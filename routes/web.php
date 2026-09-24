@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BusinessController;
 use App\Http\Controllers\PrintController;
 use App\Http\Controllers\PwaController;
 use App\Http\Controllers\ReportExportController;
@@ -31,7 +32,13 @@ Route::get('/', function () {
         : view('welcome');
 })->name('home');
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'restaurant.context'])->group(function () {
+    Route::post('/businesses', [BusinessController::class, 'store'])
+        ->name('businesses.store');
+
+    Route::post('/businesses/switch', [BusinessController::class, 'switch'])
+        ->name('businesses.switch');
+
     Route::livewire('/dashboard', DashboardPage::class)
         ->middleware('permission:dashboard.view')
         ->name('dashboard');

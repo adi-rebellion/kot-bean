@@ -44,10 +44,7 @@
                         <span class="text-sm font-bold text-white">{{ strtoupper(substr(auth()->user()?->restaurant?->name ?? 'K', 0, 1)) }}</span>
                     </div>
                 @endif
-                <div class="min-w-0 flex-1">
-                    <p class="truncate text-sm font-bold tracking-tight">{{ auth()->user()?->restaurant?->name ?? 'KotBean' }}</p>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">Powered by KotBean</p>
-                </div>
+                @include('partials.business-switcher')
                 <button @click="sidebarOpen = false" type="button" class="rounded-lg p-2 text-slate-400 hover:bg-slate-100 lg:hidden dark:hover:bg-slate-800" aria-label="Close menu">
                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
                 </button>
