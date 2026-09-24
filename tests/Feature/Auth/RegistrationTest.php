@@ -13,7 +13,9 @@ class RegistrationTest extends TestCase
     {
         $response = $this->get('/register');
 
-        $response->assertStatus(200);
+        $response->assertStatus(200)
+            ->assertSee('Create your KotBean account')
+            ->assertSee('Already have an account?');
     }
 
     public function test_new_users_can_register(): void
