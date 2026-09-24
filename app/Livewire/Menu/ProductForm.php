@@ -10,12 +10,17 @@ use App\Models\ProductVariant;
 use App\Services\AiImageService;
 use App\Services\ProductService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 #[Layout('layouts.kotbean')]
 class ProductForm extends Component
 {
+    use WithFileUploads;
+
     public ?Product $product = null;
 
     public string $name = '';
@@ -66,6 +71,10 @@ class ProductForm extends Component
 
     public bool $variantIsAvailable = true;
 
+    public $image = null;
+
+    public bool $removeImage = false;
+
     public function mount(?Product $product = null): void
     {
         $this->product = $product;
@@ -79,13 +88,13 @@ class ProductForm extends Component
                 'price' => (string) $product->price,
                 'cost_price' => (string) ($product->cost_price ?? ''),
                 'tax_rate' => (string) ($product->tax_rate ?? ''),
-                'stock' => $product->stock,
-                'min_stock' => $product->min_stock,
-                'preparation_time' => $product->preparation_time ?? 15,
-                'has_variants' => $product->has_variants,
-                'track_inventory' => $product->track_inventory,
-                'is_available' => $product->is_available,
-                'sort_order' => $product->sort_order,
+                'stock' => (int) $product->stock,
+                'min_stock' => (int) $product->min_stock,
+                'preparation_time' => (int) ($product->preparation_time ?? 15),
+                'has_variants' => (bool) $product->has_variants,
+                'track_inventory' => (bool) $product->track_inventory,
+                'is_available' => (bool) $product->is_available,
+                'sort_order' => (int) $product->sort_order,
             ]);
         }
     }
@@ -107,7 +116,16 @@ class ProductForm extends Component
             'track_inventory' => 'boolean',
             'is_available' => 'boolean',
             'sort_order' => 'integer|min:0',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
+
+        unset($data['image']);
+
+        $data['category_id'] = $data['category_id'] ?: null;
+        $data['cost_price'] = $data['cost_price'] === '' || $data['cost_price'] === null ? 0 : $data['cost_price'];
+        $data['tax_rate'] = $data['tax_rate'] === '' ? null : $data['tax_rate'];
+        $data['description'] = $data['description'] === '' ? null : $data['description'];
+        $data['sku'] = $data['sku'] === '' ? null : $data['sku'];
 
         $productService = app(ProductService::class);
 
@@ -118,6 +136,31 @@ class ProductForm extends Component
             $this->product = $productService->create($data, auth()->user());
             session()->flash('success', 'Product created successfully.');
         }
+
+        $this->product = $this->persistImage($this->product);
+    }
+
+    public function updatedImage(): void
+    {
+        $this->removeImage = false;
+
+        try {
+            $this->validateOnly('image', [
+                'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            ]);
+        } catch (ValidationException $exception) {
+            $this->image = null;
+
+            throw $exception;
+        }
+    }
+
+    public function clearImage(): void
+    {
+        abort_unless(auth()->user()->hasPermission('menu.manage'), 403);
+
+        $this->image = null;
+        $this->removeImage = true;
     }
 
     public function editVariant(int $variantId): void
@@ -283,12 +326,41 @@ class ProductForm extends Component
         if ($generation->status === AiGenerationStatus::Completed) {
             app(AiImageService::class)->applyGeneratedImage($generation);
             $this->product = $this->product->fresh();
+            $this->image = null;
+            $this->removeImage = false;
             $this->generationMessage = 'Image generated and applied!';
             $this->generationId = null;
         } elseif ($generation->status === AiGenerationStatus::Failed) {
             $this->generationMessage = $generation->error_message ?? 'Image generation failed.';
             $this->generationId = null;
         }
+    }
+
+    private function persistImage(Product $product): Product
+    {
+        $path = $product->image_path;
+
+        if ($this->removeImage && $path) {
+            Storage::disk('public')->delete($path);
+            $path = null;
+        }
+
+        if ($this->image) {
+            if ($path) {
+                Storage::disk('public')->delete($path);
+            }
+
+            $path = $this->image->store('products/'.$product->restaurant_id, 'public');
+        }
+
+        if ($path !== $product->image_path) {
+            $product = app(ProductService::class)->update($product, ['image_path' => $path]);
+        }
+
+        $this->image = null;
+        $this->removeImage = false;
+
+        return $product;
     }
 
     public function render(): View

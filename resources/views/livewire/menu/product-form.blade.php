@@ -141,18 +141,33 @@
             </div>
         @endif
 
-        {{-- AI Image --}}
+        {{-- Product Image --}}
         <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
             <h3 class="text-sm font-semibold text-slate-900">Product Image</h3>
-            <div class="mt-3 flex items-start gap-4">
-                @if ($product?->image_url)
-                    <img src="{{ $product->image_url }}" alt="{{ $product->name }}" class="h-24 w-24 rounded-lg object-cover shadow-sm">
-                @else
-                    <div class="flex h-24 w-24 items-center justify-center rounded-lg bg-slate-200 text-slate-400">
+            <p class="mt-1 text-xs text-slate-500">Upload a photo or generate one with AI.</p>
+            <div class="mt-3 flex flex-col items-start gap-4 sm:flex-row">
+                <div class="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-200 text-slate-400">
+                    @if ($image && $image->isPreviewable())
+                        <img src="{{ $image->temporaryUrl() }}" alt="Product preview" class="h-full w-full object-cover">
+                    @elseif (! $removeImage && $product?->image_url)
+                        <img src="{{ $product->image_url }}" alt="{{ $product->name }}" class="h-full w-full object-cover">
+                    @else
                         <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16"/></svg>
-                    </div>
-                @endif
-                <div>
+                    @endif
+                </div>
+                <div class="min-w-0 flex-1 space-y-2">
+                    <input
+                        wire:model="image"
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        class="block w-full text-sm text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-white file:px-3 file:py-2 file:text-sm file:font-semibold file:text-slate-700 hover:file:bg-slate-100"
+                    >
+                    <p class="text-xs text-slate-500">PNG, JPG or WebP. Max 2 MB.</p>
+                    @if ($image || (! $removeImage && $product?->image_url))
+                        <button wire:click.prevent="clearImage" type="button" class="text-xs font-medium text-red-600 hover:text-red-700">Remove image</button>
+                    @endif
+                    @error('image') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
+                    <div wire:loading wire:target="image" class="text-xs text-slate-500">Uploading preview…</div>
                     <button
                         wire:click="requestAiImage"
                         wire:loading.attr="disabled"
