@@ -142,8 +142,11 @@
                         </div>
                         <p class="shrink-0 text-lg font-bold text-amber-600">₹{{ number_format((float) $customer->total_spent, 0) }}</p>
                     </div>
-                    <div class="mt-3 flex justify-between border-t border-slate-100 pt-3 text-sm text-slate-600">
+                    <div class="mt-3 flex flex-wrap justify-between gap-2 border-t border-slate-100 pt-3 text-sm text-slate-600">
                         <span>{{ $customer->total_orders }} orders</span>
+                        @if ($loyaltyEnabled)
+                            <span class="font-semibold text-violet-600">{{ number_format($customer->loyalty_points) }} pts</span>
+                        @endif
                         <span>Last: {{ $customer->last_order_at?->format('M j, Y') ?? '—' }}</span>
                     </div>
                 </article>
@@ -161,6 +164,9 @@
                             <th class="px-4 py-3 text-left text-xs font-medium uppercase text-slate-500">Email</th>
                             <th class="px-4 py-3 text-right text-xs font-medium uppercase text-slate-500">Orders</th>
                             <th class="px-4 py-3 text-right text-xs font-medium uppercase text-slate-500">Total Spent</th>
+                            @if ($loyaltyEnabled)
+                                <th class="px-4 py-3 text-right text-xs font-medium uppercase text-slate-500">Points</th>
+                            @endif
                             <th class="px-4 py-3 text-left text-xs font-medium uppercase text-slate-500">Last Order</th>
                         </tr>
                     </thead>
@@ -172,6 +178,9 @@
                                 <td class="px-4 py-3 text-sm text-slate-600">{{ $customer->email ?? '—' }}</td>
                                 <td class="px-4 py-3 text-right text-sm text-slate-600">{{ $customer->total_orders }}</td>
                                 <td class="px-4 py-3 text-right text-sm font-semibold text-amber-600">₹{{ number_format((float) $customer->total_spent, 2) }}</td>
+                                @if ($loyaltyEnabled)
+                                    <td class="px-4 py-3 text-right text-sm font-semibold text-violet-600">{{ number_format($customer->loyalty_points) }}</td>
+                                @endif
                                 <td class="px-4 py-3 text-sm text-slate-500">{{ $customer->last_order_at?->format('M j, Y') ?? '—' }}</td>
                             </tr>
                         @endforeach

@@ -31,6 +31,12 @@ class SettingsPage extends Component
 
     public bool $tables_enabled = true;
 
+    public bool $loyalty_enabled = false;
+
+    public string $loyalty_points_per_100 = '1';
+
+    public string $loyalty_rupees_per_point = '1';
+
     public string $theme_color = '#f59e0b';
 
     public $logo = null;
@@ -65,6 +71,9 @@ class SettingsPage extends Component
             'default_tax_rate' => (string) ($restaurant->default_tax_rate ?? 0),
             'timezone' => $restaurant->timezone ?? config('app.timezone'),
             'tables_enabled' => $restaurant->usesTables(),
+            'loyalty_enabled' => (bool) ($restaurant->settings['loyalty_enabled'] ?? false),
+            'loyalty_points_per_100' => (string) ($restaurant->settings['loyalty_points_per_100'] ?? 1),
+            'loyalty_rupees_per_point' => (string) ($restaurant->settings['loyalty_rupees_per_point'] ?? 1),
             'theme_color' => $restaurant->themeColor(),
             'current_logo_url' => $restaurant->logoUrl(),
         ]);
@@ -102,6 +111,8 @@ class SettingsPage extends Component
             'gstin' => 'nullable|string|max:20',
             'default_tax_rate' => 'nullable|numeric|min:0|max:100',
             'timezone' => 'required|string|max:50',
+            'loyalty_points_per_100' => 'nullable|integer|min:1|max:100',
+            'loyalty_rupees_per_point' => 'nullable|numeric|min:0.01|max:1000',
             'theme_color' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'logo' => 'nullable|file|mimes:jpg,jpeg,png,webp,svg|max:2048',
         ]);
@@ -109,6 +120,9 @@ class SettingsPage extends Component
         $restaurant = auth()->user()->restaurant;
         $settings = $restaurant->settings ?? [];
         $settings['tables_enabled'] = $this->tables_enabled;
+        $settings['loyalty_enabled'] = $this->loyalty_enabled;
+        $settings['loyalty_points_per_100'] = (int) ($data['loyalty_points_per_100'] ?? 1);
+        $settings['loyalty_rupees_per_point'] = (float) ($data['loyalty_rupees_per_point'] ?? 1);
         $settings['theme_color'] = $data['theme_color'];
 
         $logoPath = $restaurant->logo_path;

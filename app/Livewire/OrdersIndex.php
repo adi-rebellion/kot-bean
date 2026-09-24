@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Enums\OrderStatus;
 use App\Models\Order;
+use App\Services\OrderService;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -54,10 +55,24 @@ class OrdersIndex extends Component
         $this->resetPage();
     }
 
+    public function cancelOrder(int $orderId): void
+    {
+        abort_unless(auth()->user()->hasPermission('orders.manage'), 403);
+
+        $order = Order::findOrFail($orderId);
+
+        try {
+            app(OrderService::class)->cancel($order, auth()->user(), 'Cancelled from orders page');
+            session()->flash('success', "Order {$order->order_number} cancelled.");
+        } catch (\InvalidArgumentException $exception) {
+            session()->flash('error', $exception->getMessage());
+        }
+    }
+
     public function render(): View
     {
         $query = Order::query()
-            ->with(['table', 'customer', 'creator'])
+            ->with(['table', 'customer', 'creator', 'kots'])
             ->latest();
 
         if ($this->statusFilter !== '') {
@@ -75,6 +90,7 @@ class OrdersIndex extends Component
         return view('livewire.orders-index', [
             'orders' => $query->paginate(15),
             'statuses' => OrderStatus::cases(),
+            'canManage' => auth()->user()->hasPermission('orders.manage'),
         ]);
     }
 }

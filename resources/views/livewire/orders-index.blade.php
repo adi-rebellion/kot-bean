@@ -13,8 +13,14 @@
         </div>
     </div>
 
+    @if (session('success'))
+        <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{{ session('success') }}</div>
+    @endif
+    @if (session('error'))
+        <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ session('error') }}</div>
+    @endif
+
     @if ($orders->isNotEmpty())
-        {{-- Mobile cards --}}
         <div class="space-y-3 md:hidden">
             @foreach ($orders as $order)
                 <article wire:key="order-m-{{ $order->id }}" class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -25,22 +31,20 @@
                         </div>
                         <x-order-status-badge :status="$order->status" />
                     </div>
-                    <div class="mt-3 grid grid-cols-2 gap-2 text-sm">
-                        <div>
-                            <p class="text-xs text-slate-400">Type</p>
-                            <p class="font-medium text-slate-700">{{ $order->type->label() }}</p>
-                        </div>
-                        <div>
-                            <p class="text-xs text-slate-400">Table</p>
-                            <p class="font-medium text-slate-700">{{ $order->table?->name ?? '—' }}</p>
-                        </div>
-                    </div>
                     <p class="mt-3 text-lg font-bold text-amber-600">₹{{ number_format((float) $order->total, 2) }}</p>
+                    <div class="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
+                        <a href="{{ route('orders.invoice', $order) }}" target="_blank" class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700">Invoice</a>
+                        @if ($order->kots->isNotEmpty())
+                            <a href="{{ route('kots.print', $order->kots->last()) }}" target="_blank" class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700">KOT</a>
+                        @endif
+                        @if ($canManage && $order->canBeCancelled())
+                            <button wire:click="cancelOrder({{ $order->id }})" wire:confirm="Cancel order {{ $order->order_number }}?" type="button" class="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600">Cancel</button>
+                        @endif
+                    </div>
                 </article>
             @endforeach
         </div>
 
-        {{-- Desktop table --}}
         <div class="hidden overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm md:block">
             <x-table-scroll>
                 <table class="min-w-full divide-y divide-slate-200">
@@ -52,6 +56,7 @@
                             <th class="px-4 py-3 text-left text-xs font-medium uppercase text-slate-500">Status</th>
                             <th class="px-4 py-3 text-left text-xs font-medium uppercase text-slate-500">Total</th>
                             <th class="px-4 py-3 text-left text-xs font-medium uppercase text-slate-500">Date</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium uppercase text-slate-500">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -63,6 +68,15 @@
                                 <td class="px-4 py-3"><x-order-status-badge :status="$order->status" /></td>
                                 <td class="px-4 py-3 text-sm font-semibold text-amber-600">₹{{ number_format((float) $order->total, 2) }}</td>
                                 <td class="px-4 py-3 text-sm text-slate-500">{{ $order->created_at->format('M j, g:i A') }}</td>
+                                <td class="px-4 py-3 text-right text-sm">
+                                    <a href="{{ route('orders.invoice', $order) }}" target="_blank" class="font-medium text-slate-600 hover:text-slate-900">Invoice</a>
+                                    @if ($order->kots->isNotEmpty())
+                                        <a href="{{ route('kots.print', $order->kots->last()) }}" target="_blank" class="ml-3 font-medium text-slate-600 hover:text-slate-900">KOT</a>
+                                    @endif
+                                    @if ($canManage && $order->canBeCancelled())
+                                        <button wire:click="cancelOrder({{ $order->id }})" wire:confirm="Cancel order {{ $order->order_number }}?" type="button" class="ml-3 font-medium text-red-600 hover:text-red-700">Cancel</button>
+                                    @endif
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>

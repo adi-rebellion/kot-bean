@@ -135,6 +135,25 @@
                     </span>
                 </label>
             </div>
+            <div class="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/50">
+                <label class="flex cursor-pointer items-start gap-3">
+                    <input wire:model="loyalty_enabled" type="checkbox" class="mt-1 rounded border-slate-300 focus-brand dark:border-slate-600" style="accent-color: {{ $theme_color }}">
+                    <span>
+                        <span class="block text-sm font-medium text-slate-900 dark:text-white">Enable customer loyalty points</span>
+                        <span class="mt-1 block text-sm text-slate-500">Customers earn points automatically when orders are completed.</span>
+                    </span>
+                </label>
+                <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Points per ₹100 spent</label>
+                        <input wire:model="loyalty_points_per_100" type="number" min="1" max="100" class="w-full rounded-lg border-slate-300 text-sm focus-brand focus:ring-2 dark:border-slate-700 dark:bg-slate-800 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">₹ value per point (for future redemption)</label>
+                        <input wire:model="loyalty_rupees_per_point" type="number" step="0.01" min="0.01" class="w-full rounded-lg border-slate-300 text-sm focus-brand focus:ring-2 dark:border-slate-700 dark:bg-slate-800 dark:text-white">
+                    </div>
+                </div>
+            </div>
         </section>
 
         <div class="flex justify-stretch sm:justify-end">

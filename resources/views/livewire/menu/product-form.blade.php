@@ -83,6 +83,64 @@
             </label>
         </div>
 
+        @if ($product?->exists && ($has_variants || $variants->isNotEmpty()))
+            <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <h3 class="text-sm font-semibold text-slate-900">Product Variants</h3>
+                @if ($variants->isNotEmpty())
+                    <ul class="mt-3 space-y-2">
+                        @foreach ($variants as $variant)
+                            <li wire:key="variant-{{ $variant->id }}" class="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-sm">
+                                <div>
+                                    <span class="font-semibold text-slate-900">{{ $variant->name }}</span>
+                                    <span class="ml-2 text-amber-600">₹{{ number_format((float) $variant->price, 2) }}</span>
+                                    @if ($variant->is_default)<span class="ml-2 text-xs text-slate-400">Default</span>@endif
+                                    <span class="ml-2 text-xs text-slate-500">Stock: {{ $variant->stock }}</span>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button wire:click="editVariant({{ $variant->id }})" type="button" class="text-amber-600 hover:text-amber-700">Edit</button>
+                                    <button wire:click="deleteVariant({{ $variant->id }})" wire:confirm="Delete this variant?" type="button" class="text-red-600 hover:text-red-700">Delete</button>
+                                </div>
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+                <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                    <div>
+                        <label class="mb-1 block text-xs font-medium text-slate-600">Variant name</label>
+                        <input wire:model="variantName" type="text" placeholder="e.g. Large" class="w-full rounded-lg border-slate-300 text-sm">
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-medium text-slate-600">Price (₹)</label>
+                        <input wire:model="variantPrice" type="number" step="0.01" min="0" class="w-full rounded-lg border-slate-300 text-sm">
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-medium text-slate-600">SKU</label>
+                        <input wire:model="variantSku" type="text" class="w-full rounded-lg border-slate-300 text-sm">
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-medium text-slate-600">Stock</label>
+                        <input wire:model="variantStock" type="number" min="0" class="w-full rounded-lg border-slate-300 text-sm">
+                    </div>
+                </div>
+                <div class="mt-3 flex flex-wrap gap-4">
+                    <label class="flex items-center gap-2 text-sm text-slate-700">
+                        <input wire:model="variantIsDefault" type="checkbox" class="rounded border-slate-300 text-amber-600">
+                        Default variant
+                    </label>
+                    <label class="flex items-center gap-2 text-sm text-slate-700">
+                        <input wire:model="variantIsAvailable" type="checkbox" class="rounded border-slate-300 text-amber-600">
+                        Available
+                    </label>
+                </div>
+                <div class="mt-3 flex gap-2">
+                    <button wire:click="saveVariant" type="button" class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-900">{{ $editingVariantId ? 'Update Variant' : 'Add Variant' }}</button>
+                    @if ($editingVariantId)
+                        <button wire:click="cancelVariantForm" type="button" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">Cancel</button>
+                    @endif
+                </div>
+            </div>
+        @endif
+
         {{-- AI Image --}}
         <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
             <h3 class="text-sm font-semibold text-slate-900">Product Image</h3>

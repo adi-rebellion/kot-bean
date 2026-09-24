@@ -107,9 +107,19 @@ class Restaurant extends Model
         return $this->hasMany(AuditLog::class);
     }
 
+    public function cashRegisterSessions(): HasMany
+    {
+        return $this->hasMany(CashRegisterSession::class);
+    }
+
     public function usesTables(): bool
     {
         return (bool) ($this->settings['tables_enabled'] ?? true);
+    }
+
+    public function loyaltyEnabled(): bool
+    {
+        return (bool) ($this->settings['loyalty_enabled'] ?? false);
     }
 
     public function themeColor(): string

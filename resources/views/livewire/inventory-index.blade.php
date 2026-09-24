@@ -1,5 +1,55 @@
 <div class="mx-auto max-w-7xl space-y-4 sm:space-y-6">
-    <h1 class="text-xl font-bold text-slate-900 sm:text-2xl">Inventory</h1>
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <h1 class="text-xl font-bold text-slate-900 sm:text-2xl">Inventory</h1>
+        @if ($canManage)
+            <button wire:click="openAdjustForm" type="button" class="rounded-lg bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-600">Adjust Stock</button>
+        @endif
+    </div>
+
+    @if (session('success'))
+        <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{{ session('success') }}</div>
+    @endif
+    @if (session('error'))
+        <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ session('error') }}</div>
+    @endif
+
+    @if ($showAdjustForm)
+        <form wire:submit="saveAdjustment" class="space-y-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+            <h2 class="text-lg font-semibold text-slate-900">Adjust Stock</h2>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div class="sm:col-span-2">
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Product</label>
+                    <select wire:model="productId" class="w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
+                        <option value="">Select product</option>
+                        @foreach ($products as $product)
+                            <option value="{{ $product->id }}">{{ $product->name }} (stock: {{ $product->stock }})</option>
+                        @endforeach
+                    </select>
+                    @error('productId') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Type</label>
+                    <select wire:model="adjustmentType" class="w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
+                        <option value="restock">Restock (+)</option>
+                        <option value="wastage">Wastage (−)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Quantity</label>
+                    <input wire:model="quantity" type="number" min="1" class="w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
+                    @error('quantity') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Reason</label>
+                    <input wire:model="reason" type="text" placeholder="Optional note" class="w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button type="submit" class="rounded-lg bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-600">Save Adjustment</button>
+                <button wire:click="cancelAdjustment" type="button" class="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700">Cancel</button>
+            </div>
+        </form>
+    @endif
 
     <div class="grid gap-4 sm:grid-cols-3">
         <x-metric-card label="Tracked Products" :value="number_format($totalProducts)" />

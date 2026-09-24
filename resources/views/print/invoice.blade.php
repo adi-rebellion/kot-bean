@@ -42,7 +42,15 @@
         <tr><td>Subtotal</td><td style="text-align:right">₹{{ number_format($order->subtotal, 2) }}</td></tr>
         <tr><td>Tax</td><td style="text-align:right">₹{{ number_format($order->tax_amount, 2) }}</td></tr>
         @if($order->discount_amount > 0)
-        <tr><td>Discount@if($order->promotion) ({{ $order->promotion->name }})@endif</td><td style="text-align:right">-₹{{ number_format($order->discount_amount, 2) }}</td></tr>
+        <tr>
+            <td>
+                Discount
+                @if($order->promotion)
+                    ({{ $order->promotion->name }})
+                @endif
+            </td>
+            <td style="text-align:right">-₹{{ number_format($order->discount_amount, 2) }}</td>
+        </tr>
         @endif
         <tr><td>TOTAL</td><td style="text-align:right">₹{{ number_format($order->total, 2) }}</td></tr>
     </table>

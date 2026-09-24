@@ -53,6 +53,8 @@ class CustomersIndex extends Component
 
     public function render(TwilioWhatsAppService $twilioWhatsAppService, CustomerWhatsAppService $customerWhatsAppService): View
     {
+        $loyaltyEnabled = auth()->user()->restaurant->loyaltyEnabled();
+
         $query = Customer::query()->orderByDesc('last_order_at');
 
         if ($this->search !== '') {
@@ -100,6 +102,7 @@ class CustomersIndex extends Component
             'messagePreview' => $messagePreview,
             'twilioConfigured' => $twilioWhatsAppService->isConfigured(),
             'canSendMessages' => auth()->user()->hasPermission('customers.manage'),
+            'loyaltyEnabled' => $loyaltyEnabled,
         ]);
     }
 }

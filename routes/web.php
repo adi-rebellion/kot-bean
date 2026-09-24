@@ -3,11 +3,13 @@
 use App\Http\Controllers\PrintController;
 use App\Http\Controllers\PwaController;
 use App\Http\Controllers\ReportExportController;
+use App\Livewire\CashRegisterIndex;
 use App\Livewire\CustomersIndex;
 use App\Livewire\DashboardPage;
 use App\Livewire\ExpensesIndex;
 use App\Livewire\InventoryIndex;
 use App\Livewire\KitchenDisplay;
+use App\Livewire\Menu\CategoriesIndex;
 use App\Livewire\Menu\ProductForm;
 use App\Livewire\Menu\ProductsIndex;
 use App\Livewire\OrdersIndex;
@@ -58,6 +60,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('permission:menu.view')
         ->name('menu.index');
 
+    Route::livewire('/menu/categories', CategoriesIndex::class)
+        ->middleware('permission:menu.view')
+        ->name('menu.categories');
+
     Route::livewire('/menu/create', ProductForm::class)
         ->middleware('permission:menu.manage')
         ->name('menu.create');
@@ -77,6 +83,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('/promotions', PromotionsIndex::class)
         ->middleware('permission:promotions.view')
         ->name('promotions.index');
+
+    Route::livewire('/cash-register', CashRegisterIndex::class)
+        ->middleware('permission:payments.process')
+        ->name('cash-register.index');
 
     Route::livewire('/reports', ReportsIndex::class)
         ->middleware('permission:reports.view')

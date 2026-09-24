@@ -1,9 +1,12 @@
 <div class="mx-auto max-w-7xl space-y-4 sm:space-y-6">
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 class="text-xl font-bold text-slate-900 sm:text-2xl">Products</h1>
-        <a href="{{ route('menu.create') ?? '#' }}" wire:navigate class="inline-flex w-full items-center justify-center rounded-lg bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-600 sm:w-auto">
-            Add Product
-        </a>
+        <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+            <a href="{{ route('menu.categories') }}" wire:navigate class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Categories</a>
+            <a href="{{ route('menu.create') ?? '#' }}" wire:navigate class="inline-flex items-center justify-center rounded-lg bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-600">
+                Add Product
+            </a>
+        </div>
     </div>
 
     <div class="grid gap-3 sm:flex sm:flex-wrap sm:items-center">

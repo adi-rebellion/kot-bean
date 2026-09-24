@@ -24,12 +24,14 @@ class Customer extends Model
         'total_orders',
         'total_spent',
         'last_order_at',
+        'loyalty_points',
     ];
 
     protected function casts(): array
     {
         return [
             'total_orders' => 'integer',
+            'loyalty_points' => 'integer',
             'total_spent' => 'decimal:2',
             'last_order_at' => 'datetime',
         ];
@@ -43,5 +45,10 @@ class Customer extends Model
     public function latestOrder(): HasOne
     {
         return $this->hasOne(Order::class)->latestOfMany();
+    }
+
+    public function loyaltyTransactions(): HasMany
+    {
+        return $this->hasMany(LoyaltyTransaction::class);
     }
 }

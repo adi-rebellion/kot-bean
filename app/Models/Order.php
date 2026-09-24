@@ -133,6 +133,15 @@ class Order extends Model
         return $this->refresh();
     }
 
+    public function canBeCancelled(): bool
+    {
+        return ! in_array($this->status, [
+            OrderStatus::Completed,
+            OrderStatus::Paid,
+            OrderStatus::Cancelled,
+        ], true);
+    }
+
     public static function generateOrderNumber(int $restaurantId): string
     {
         $date = now()->format('Ymd');

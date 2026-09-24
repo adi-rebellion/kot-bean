@@ -87,7 +87,14 @@
         </div>
     @endif
 
-    <div class="mt-auto border-t border-slate-800 p-3">
+    <div class="mt-auto border-t border-slate-800 p-3 space-y-2">
+        <a
+            href="{{ route('kots.print', $kot) }}"
+            target="_blank"
+            class="flex w-full items-center justify-center rounded-xl border border-slate-600 px-4 py-2.5 text-sm font-semibold text-slate-200 hover:bg-slate-800"
+        >
+            Print KOT
+        </a>
         <button
             wire:click="advanceStatus({{ $kot->id }})"
             wire:loading.attr="disabled"

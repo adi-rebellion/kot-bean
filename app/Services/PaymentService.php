@@ -93,6 +93,7 @@ class PaymentService
 
                 if ($order->customer) {
                     app(CustomerService::class)->recordCompletedOrder($order->customer, $order);
+                    app(LoyaltyService::class)->awardForCompletedOrder($order);
                 }
             }
 

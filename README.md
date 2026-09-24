@@ -2,6 +2,8 @@
 
 Modern Laravel POS + KOT + Inventory + Billing platform for cafés and restaurants.
 
+> **Full feature list, module guide, and roadmap:** see [FUNCTIONALITY.md](FUNCTIONALITY.md)
+
 ## Requirements
 
 - PHP 8.4+

@@ -6,6 +6,7 @@ use App\Enums\AiGenerationStatus;
 use App\Models\AiImageGeneration;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Services\AiImageService;
 use App\Services\ProductService;
 use Illuminate\Contracts\View\View;
@@ -50,6 +51,20 @@ class ProductForm extends Component
     public bool $generationPending = false;
 
     public string $generationMessage = '';
+
+    public ?int $editingVariantId = null;
+
+    public string $variantName = '';
+
+    public string $variantPrice = '';
+
+    public string $variantSku = '';
+
+    public int $variantStock = 0;
+
+    public bool $variantIsDefault = false;
+
+    public bool $variantIsAvailable = true;
 
     public function mount(?Product $product = null): void
     {
@@ -103,6 +118,107 @@ class ProductForm extends Component
             $this->product = $productService->create($data, auth()->user());
             session()->flash('success', 'Product created successfully.');
         }
+    }
+
+    public function editVariant(int $variantId): void
+    {
+        abort_unless(auth()->user()->hasPermission('menu.manage'), 403);
+
+        $variant = ProductVariant::query()
+            ->where('product_id', $this->product?->id)
+            ->findOrFail($variantId);
+
+        $this->editingVariantId = $variant->id;
+        $this->variantName = $variant->name;
+        $this->variantPrice = (string) $variant->price;
+        $this->variantSku = $variant->sku ?? '';
+        $this->variantStock = $variant->stock;
+        $this->variantIsDefault = $variant->is_default;
+        $this->variantIsAvailable = $variant->is_available;
+    }
+
+    public function saveVariant(): void
+    {
+        abort_unless(auth()->user()->hasPermission('menu.manage'), 403);
+
+        if (! $this->product?->exists) {
+            session()->flash('error', 'Save the product before adding variants.');
+
+            return;
+        }
+
+        $data = $this->validate([
+            'variantName' => ['required', 'string', 'max:255'],
+            'variantPrice' => ['required', 'numeric', 'min:0'],
+            'variantSku' => ['nullable', 'string', 'max:100'],
+            'variantStock' => ['integer', 'min:0'],
+            'variantIsDefault' => ['boolean'],
+            'variantIsAvailable' => ['boolean'],
+        ]);
+
+        if ($data['variantIsDefault']) {
+            ProductVariant::query()
+                ->where('product_id', $this->product->id)
+                ->when($this->editingVariantId, fn ($q) => $q->where('id', '!=', $this->editingVariantId))
+                ->update(['is_default' => false]);
+        }
+
+        $payload = [
+            'name' => $data['variantName'],
+            'price' => $data['variantPrice'],
+            'sku' => $data['variantSku'] ?: null,
+            'stock' => $data['variantStock'],
+            'is_default' => $data['variantIsDefault'],
+            'is_available' => $data['variantIsAvailable'],
+        ];
+
+        if ($this->editingVariantId) {
+            ProductVariant::query()
+                ->where('product_id', $this->product->id)
+                ->findOrFail($this->editingVariantId)
+                ->update($payload);
+        } else {
+            ProductVariant::create([
+                'product_id' => $this->product->id,
+                ...$payload,
+            ]);
+        }
+
+        $this->product->update(['has_variants' => true]);
+        $this->resetVariantForm();
+        session()->flash('success', 'Variant saved.');
+    }
+
+    public function deleteVariant(int $variantId): void
+    {
+        abort_unless(auth()->user()->hasPermission('menu.manage'), 403);
+
+        ProductVariant::query()
+            ->where('product_id', $this->product?->id)
+            ->findOrFail($variantId)
+            ->delete();
+
+        if ($this->product && ! $this->product->variants()->exists()) {
+            $this->product->update(['has_variants' => false]);
+        }
+
+        session()->flash('success', 'Variant deleted.');
+    }
+
+    public function cancelVariantForm(): void
+    {
+        $this->resetVariantForm();
+    }
+
+    private function resetVariantForm(): void
+    {
+        $this->editingVariantId = null;
+        $this->variantName = '';
+        $this->variantPrice = '';
+        $this->variantSku = '';
+        $this->variantStock = 0;
+        $this->variantIsDefault = false;
+        $this->variantIsAvailable = true;
     }
 
     public function requestAiImage(): void
@@ -179,6 +295,9 @@ class ProductForm extends Component
     {
         return view('livewire.menu.product-form', [
             'categories' => Category::query()->orderBy('sort_order')->get(),
+            'variants' => $this->product?->exists
+                ? $this->product->variants()->orderBy('sort_order')->orderBy('name')->get()
+                : collect(),
         ]);
     }
 }
