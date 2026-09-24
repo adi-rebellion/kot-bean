@@ -18,6 +18,9 @@ class KitchenDisplay extends Component
     /** @var Collection<int, Kot> */
     public Collection $kots;
 
+    /** @var array<int, int> */
+    public array $knownPendingKotIds = [];
+
     public function mount(): void
     {
         $this->kots = collect();
@@ -26,9 +29,28 @@ class KitchenDisplay extends Component
 
     public function refreshKots(): void
     {
+        $previousPendingIds = $this->knownPendingKotIds;
+
         $this->kots = app(KotService::class)
             ->getActiveKots(auth()->user()->restaurant)
             ->load(['items', 'table', 'order']);
+
+        $pendingIds = $this->kots
+            ->where('status', KotStatus::Pending)
+            ->pluck('id')
+            ->map(fn (mixed $id): int => (int) $id)
+            ->values()
+            ->all();
+
+        if ($previousPendingIds !== []) {
+            $newIds = array_values(array_diff($pendingIds, $previousPendingIds));
+
+            if ($newIds !== []) {
+                $this->dispatch('kitchen-new-order', count: count($newIds));
+            }
+        }
+
+        $this->knownPendingKotIds = $pendingIds;
     }
 
     public function advanceStatus(int $kotId): void

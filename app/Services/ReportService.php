@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Enums\OrderStatus;
+use App\Enums\PaymentMethod;
+use App\Models\Expense;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
@@ -83,7 +85,7 @@ class ReportService
             ->where('stock', '<=', 0)
             ->count();
 
-        $todayExpenses = (float) \App\Models\Expense::query()
+        $todayExpenses = (float) Expense::query()
             ->where('restaurant_id', $restaurant->id)
             ->whereDate('expense_date', $date)
             ->sum('amount');
@@ -277,6 +279,67 @@ class ReportService
             ->groupBy('method')
             ->orderByDesc('total_amount')
             ->get();
+    }
+
+    public function writeSalesReportCsv(string $stream, Restaurant $restaurant, Carbon $from, Carbon $to): void
+    {
+        $handle = fopen($stream, 'w');
+
+        if ($handle === false) {
+            return;
+        }
+
+        fwrite($handle, "\xEF\xBB\xBF");
+
+        $salesReport = $this->getSalesReport($restaurant, $from, $to);
+        $productReport = $this->getProductReport($restaurant, $from, $to);
+        $paymentReport = $this->getPaymentReport($restaurant, $from, $to);
+
+        fputcsv($handle, ['Sales Report']);
+        fputcsv($handle, ['Restaurant', $restaurant->name]);
+        fputcsv($handle, ['Period', $salesReport['from'].' to '.$salesReport['to']]);
+        fputcsv($handle, ['Generated At', now()->toDateTimeString()]);
+        fputcsv($handle, []);
+
+        fputcsv($handle, ['Summary']);
+        fputcsv($handle, ['Metric', 'Value']);
+        fputcsv($handle, ['Orders', $salesReport['order_count']]);
+        fputcsv($handle, ['Gross Sales', $salesReport['gross_sales']]);
+        fputcsv($handle, ['Tax Collected', $salesReport['tax_collected']]);
+        fputcsv($handle, ['Discounts', $salesReport['discounts']]);
+        fputcsv($handle, ['Net Sales', $salesReport['net_sales']]);
+        fputcsv($handle, []);
+
+        fputcsv($handle, ['Product Performance']);
+        fputcsv($handle, ['Product', 'Units Sold', 'Avg Unit Price', 'Revenue']);
+
+        foreach ($productReport as $row) {
+            fputcsv($handle, [
+                $row->product_name,
+                $row->units_sold,
+                round((float) $row->avg_unit_price, 2),
+                round((float) $row->revenue, 2),
+            ]);
+        }
+
+        fputcsv($handle, []);
+
+        fputcsv($handle, ['Payment Methods']);
+        fputcsv($handle, ['Method', 'Transaction Count', 'Total Amount']);
+
+        foreach ($paymentReport as $row) {
+            $method = $row->method instanceof PaymentMethod
+                ? $row->method
+                : PaymentMethod::from($row->method);
+
+            fputcsv($handle, [
+                $method->label(),
+                $row->transaction_count,
+                round((float) $row->total_amount, 2),
+            ]);
+        }
+
+        fclose($handle);
     }
 
     public function getHourlySales(Restaurant $restaurant, ?Carbon $date = null): array

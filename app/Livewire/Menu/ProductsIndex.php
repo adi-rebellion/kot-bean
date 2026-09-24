@@ -4,6 +4,7 @@ namespace App\Livewire\Menu;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Services\ProductService;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -19,6 +20,16 @@ class ProductsIndex extends Component
 
     #[Url]
     public string $search = '';
+
+    public function delete(int $productId): void
+    {
+        abort_unless(auth()->user()->hasPermission('menu.manage'), 403);
+
+        $product = Product::findOrFail($productId);
+        app(ProductService::class)->delete($product);
+
+        session()->flash('success', 'Product deleted.');
+    }
 
     public function render(): View
     {

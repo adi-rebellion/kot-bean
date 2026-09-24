@@ -12,6 +12,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\RestaurantTable;
+use App\Services\CustomerService;
 use App\Services\OrderService;
 use App\Services\PaymentService;
 use App\Services\TableService;
@@ -54,6 +55,10 @@ class PosPage extends Component
 
     public string $successMessage = '';
 
+    public string $customerName = '';
+
+    public string $customerPhone = '';
+
     public string $deliveryAddress = '';
 
     public string $deliveryPhone = '';
@@ -81,9 +86,12 @@ class PosPage extends Component
             $existing = Order::with('items')->find($order);
 
             if ($existing && $existing->status === OrderStatus::Draft) {
+                $existing->loadMissing('customer');
                 $this->orderId = $existing->id;
                 $this->orderType = $existing->type->value;
                 $this->tableId = $existing->restaurant_table_id;
+                $this->customerName = $existing->customer?->name ?? '';
+                $this->customerPhone = $existing->customer?->phone ?? '';
                 $this->deliveryAddress = $existing->delivery_address ?? '';
                 $this->deliveryPhone = $existing->delivery_phone ?? '';
                 $this->orderNotes = $existing->notes ?? '';
@@ -105,6 +113,16 @@ class PosPage extends Component
     }
 
     public function updatedTableId(): void
+    {
+        $this->syncOrderMeta();
+    }
+
+    public function updatedCustomerName(): void
+    {
+        $this->syncOrderMeta();
+    }
+
+    public function updatedCustomerPhone(): void
     {
         $this->syncOrderMeta();
     }
@@ -326,6 +344,11 @@ class PosPage extends Component
     public function startNewOrder(): void
     {
         $this->orderId = null;
+        $this->customerName = '';
+        $this->customerPhone = '';
+        $this->deliveryAddress = '';
+        $this->deliveryPhone = '';
+        $this->orderNotes = '';
         $this->errorMessage = '';
         $this->showPaymentModal = false;
         $this->showVariantModal = false;
@@ -440,8 +463,9 @@ class PosPage extends Component
         $order = $this->orderService->createDraft([
             'type' => OrderType::from($this->orderType),
             'restaurant_table_id' => $this->resolveTableId(),
+            'customer_id' => $this->resolveCustomerId(auth()->user()->restaurant_id),
             'delivery_address' => $this->deliveryAddress ?: null,
-            'delivery_phone' => $this->deliveryPhone ?: null,
+            'delivery_phone' => $this->resolveDeliveryPhone(),
             'notes' => $this->orderNotes ?: null,
         ], auth()->user());
 
@@ -456,7 +480,7 @@ class PosPage extends Component
             return null;
         }
 
-        return Order::with('items')->find($this->orderId);
+        return Order::with(['items', 'customer'])->find($this->orderId);
     }
 
     private function syncOrderMeta(?Order $order = null): void
@@ -470,8 +494,9 @@ class PosPage extends Component
         $order->update([
             'type' => OrderType::from($this->orderType),
             'restaurant_table_id' => $this->resolveTableId(),
+            'customer_id' => $this->resolveCustomerId($order->restaurant_id),
             'delivery_address' => $this->deliveryAddress ?: null,
-            'delivery_phone' => $this->deliveryPhone ?: null,
+            'delivery_phone' => $this->resolveDeliveryPhone(),
             'notes' => $this->orderNotes ?: null,
         ]);
 
@@ -496,5 +521,28 @@ class PosPage extends Component
     private function resolveTableId(): ?int
     {
         return $this->requiresTableSelection() ? $this->tableId : null;
+    }
+
+    private function resolveCustomerId(int $restaurantId): ?int
+    {
+        $name = trim($this->customerName);
+        $phone = trim($this->customerPhone);
+
+        if ($name === '' || $phone === '') {
+            return null;
+        }
+
+        return app(CustomerService::class)->findOrCreate($restaurantId, $name, $phone)->id;
+    }
+
+    private function resolveDeliveryPhone(): ?string
+    {
+        if ($this->deliveryPhone !== '') {
+            return $this->deliveryPhone;
+        }
+
+        $phone = trim($this->customerPhone);
+
+        return $phone !== '' ? $phone : null;
     }
 }

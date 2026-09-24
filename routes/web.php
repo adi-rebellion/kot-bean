@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\PrintController;
 use App\Http\Controllers\PwaController;
+use App\Http\Controllers\ReportExportController;
 use App\Livewire\CustomersIndex;
 use App\Livewire\DashboardPage;
 use App\Livewire\ExpensesIndex;
@@ -15,6 +16,8 @@ use App\Livewire\ReportsIndex;
 use App\Livewire\SettingsPage;
 use App\Livewire\StaffIndex;
 use App\Livewire\TablesIndex;
+use App\Livewire\VendorLedger;
+use App\Livewire\VendorsIndex;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/manifest.webmanifest', [PwaController::class, 'manifest'])->name('pwa.manifest');
@@ -74,9 +77,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('permission:reports.view')
         ->name('reports.index');
 
+    Route::get('/reports/download', [ReportExportController::class, 'download'])
+        ->middleware('permission:reports.view')
+        ->name('reports.download');
+
     Route::livewire('/expenses', ExpensesIndex::class)
         ->middleware('permission:expenses.view')
         ->name('expenses.index');
+
+    Route::livewire('/vendors', VendorsIndex::class)
+        ->middleware('permission:expenses.view')
+        ->name('vendors.index');
+
+    Route::livewire('/vendors/ledger', VendorLedger::class)
+        ->middleware('permission:expenses.view')
+        ->name('vendors.ledger');
 
     Route::livewire('/staff', StaffIndex::class)
         ->middleware('permission:staff.manage')

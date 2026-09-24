@@ -71,6 +71,23 @@ class ProductService
         });
     }
 
+    public function delete(Product $product): void
+    {
+        DB::transaction(function () use ($product) {
+            $old = $product->toArray();
+
+            $product->delete();
+
+            $this->auditLogService->log(
+                'product.deleted',
+                $product,
+                $old,
+                null,
+                "Product {$product->name} deleted",
+            );
+        });
+    }
+
     private function preparePayload(array $data, int $restaurantId, ?Product $existing = null): array
     {
         $payload = array_intersect_key($data, array_flip([

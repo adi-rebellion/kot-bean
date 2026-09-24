@@ -88,6 +88,14 @@ class PaymentService
                 'completed_at' => now(),
             ]);
 
+            if ($order->customer_id) {
+                $order->loadMissing('customer');
+
+                if ($order->customer) {
+                    app(CustomerService::class)->recordCompletedOrder($order->customer, $order);
+                }
+            }
+
             if ($order->restaurant_table_id) {
                 app(TableService::class)->releaseTable($order->restaurantTable);
             }

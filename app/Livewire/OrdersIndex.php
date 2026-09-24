@@ -28,12 +28,14 @@ class OrdersIndex extends Component
 
     public function mount(): void
     {
+        $today = now()->toDateString();
+
         if ($this->dateFrom === '') {
-            $this->dateFrom = now()->subDays(7)->toDateString();
+            $this->dateFrom = $today;
         }
 
         if ($this->dateTo === '') {
-            $this->dateTo = now()->toDateString();
+            $this->dateTo = $today;
         }
     }
 

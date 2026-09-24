@@ -185,10 +185,15 @@
                         <span class="ml-1 text-sm font-normal text-slate-400">({{ $order->items->sum('quantity') }} items)</span>
                     @endif
                 </h2>
-                @if($tablesEnabled && $orderType === 'dine_in' && $tableId)
-                    @php $selectedTable = $tables->firstWhere('id', $tableId); @endphp
-                    <span class="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800">{{ $selectedTable?->name }}</span>
-                @endif
+                <div class="flex items-center gap-2">
+                    @if ($order?->customer)
+                        <span class="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-bold text-blue-800">{{ $order->customer->name }}</span>
+                    @endif
+                    @if($tablesEnabled && $orderType === 'dine_in' && $tableId)
+                        @php $selectedTable = $tables->firstWhere('id', $tableId); @endphp
+                        <span class="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800">{{ $selectedTable?->name }}</span>
+                    @endif
+                </div>
             </div>
 
             {{-- Cart items --}}
@@ -267,12 +272,19 @@
                         @click="showExtras = !showExtras"
                         type="button"
                         class="mt-2 w-full py-1 text-xs text-slate-400 hover:text-slate-600"
-                        x-text="showExtras ? 'Hide notes ▲' : 'Add notes ▼'"
+                        x-text="showExtras ? 'Hide customer & notes ▲' : 'Customer & notes ▼'"
                     ></button>
                     <div x-show="showExtras" x-cloak class="mt-2 space-y-2">
+                        <div class="rounded-xl border border-slate-200 bg-white p-3">
+                            <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Customer (optional)</p>
+                            <div class="space-y-2">
+                                <input wire:model.blur="customerName" type="text" placeholder="Customer name" class="w-full rounded-xl border-slate-200 text-sm focus:border-amber-500 focus:ring-amber-500/30">
+                                <input wire:model.blur="customerPhone" type="tel" inputmode="tel" placeholder="Mobile number" class="w-full rounded-xl border-slate-200 text-sm focus:border-amber-500 focus:ring-amber-500/30">
+                            </div>
+                            <p class="mt-2 text-xs text-slate-400">Enter both name and phone to link this order to a customer.</p>
+                        </div>
                         <textarea wire:model.blur="orderNotes" rows="2" placeholder="Order notes..." class="w-full rounded-xl border-slate-200 text-sm focus:border-amber-500 focus:ring-amber-500/30"></textarea>
                         @if($orderType === 'delivery')
-                            <input wire:model.blur="deliveryPhone" type="text" placeholder="Customer phone" class="w-full rounded-xl border-slate-200 text-sm">
                             <textarea wire:model.blur="deliveryAddress" rows="2" placeholder="Delivery address" class="w-full rounded-xl border-slate-200 text-sm"></textarea>
                         @endif
                     </div>

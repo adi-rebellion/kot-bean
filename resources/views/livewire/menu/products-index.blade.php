@@ -16,6 +16,10 @@
         </select>
     </div>
 
+    @if (session('success'))
+        <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{{ session('success') }}</div>
+    @endif
+
     @if ($products->isNotEmpty())
         {{-- Mobile cards --}}
         <div class="space-y-3 md:hidden">
@@ -48,7 +52,12 @@
                                     <x-stock-badge :status="$product->stock_status" />
                                 @endif
                             </div>
-                            <a href="{{ route('menu.edit', $product) ?? '#' }}" wire:navigate class="mt-2 inline-block text-sm font-medium text-amber-600 hover:text-amber-700">Edit →</a>
+                            <div class="mt-2 flex gap-4 text-sm">
+                                <a href="{{ route('menu.edit', $product) ?? '#' }}" wire:navigate class="font-medium text-amber-600 hover:text-amber-700">Edit</a>
+                                @if (auth()->user()->hasPermission('menu.manage'))
+                                    <button wire:click="delete({{ $product->id }})" wire:confirm="Delete {{ $product->name }}? This cannot be undone." type="button" class="font-medium text-red-600 hover:text-red-700">Delete</button>
+                                @endif
+                            </div>
                         </div>
                     </div>
                 </article>
@@ -107,7 +116,12 @@
                                     ])>{{ $product->is_available ? 'Available' : 'Unavailable' }}</span>
                                 </td>
                                 <td class="px-4 py-3 text-right">
-                                    <a href="{{ route('menu.edit', $product) ?? '#' }}" wire:navigate class="text-sm font-medium text-amber-600 hover:text-amber-700">Edit</a>
+                                    <div class="flex items-center justify-end gap-3">
+                                        <a href="{{ route('menu.edit', $product) ?? '#' }}" wire:navigate class="text-sm font-medium text-amber-600 hover:text-amber-700">Edit</a>
+                                        @if (auth()->user()->hasPermission('menu.manage'))
+                                            <button wire:click="delete({{ $product->id }})" wire:confirm="Delete {{ $product->name }}? This cannot be undone." type="button" class="text-sm font-medium text-red-600 hover:text-red-700">Delete</button>
+                                        @endif
+                                    </div>
                                 </td>
                             </tr>
                         @endforeach
