@@ -162,7 +162,7 @@
                         accept="image/png,image/jpeg,image/webp"
                         class="block w-full text-sm text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-white file:px-3 file:py-2 file:text-sm file:font-semibold file:text-slate-700 hover:file:bg-slate-100"
                     >
-                    <p class="text-xs text-slate-500">PNG, JPG or WebP. Max 2 MB.</p>
+                    <p class="text-xs text-slate-500">PNG, JPG or WebP. Max 8 MB.</p>
                     @if ($image || (! $removeImage && $product?->image_url))
                         <button wire:click.prevent="clearImage" type="button" class="text-xs font-medium text-red-600 hover:text-red-700">Remove image</button>
                     @endif

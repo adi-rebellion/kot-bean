@@ -143,6 +143,22 @@ class ProductFormTest extends TestCase
         Storage::disk('public')->assertMissing($path);
     }
 
+    public function test_rejects_product_image_larger_than_eight_megabytes(): void
+    {
+        Storage::fake('public');
+
+        $file = UploadedFile::fake()->create('huge.jpg', 9000, 'image/jpeg');
+
+        Livewire::actingAs($this->manager)
+            ->test(ProductForm::class, ['product' => $this->product])
+            ->set('image', $file)
+            ->assertHasErrors(['image']);
+
+        $this->product->refresh();
+
+        $this->assertNull($this->product->image_path);
+    }
+
     public function test_rejects_non_image_product_upload(): void
     {
         Storage::fake('public');

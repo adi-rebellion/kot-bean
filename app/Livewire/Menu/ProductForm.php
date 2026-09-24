@@ -11,7 +11,6 @@ use App\Services\AiImageService;
 use App\Services\ProductService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -20,6 +19,8 @@ use Livewire\WithFileUploads;
 class ProductForm extends Component
 {
     use WithFileUploads;
+
+    private const IMAGE_RULES = 'nullable|file|mimes:jpg,jpeg,png,webp|max:8192';
 
     public ?Product $product = null;
 
@@ -116,7 +117,7 @@ class ProductForm extends Component
             'track_inventory' => 'boolean',
             'is_available' => 'boolean',
             'sort_order' => 'integer|min:0',
-            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'image' => self::IMAGE_RULES,
         ]);
 
         unset($data['image']);
@@ -143,15 +144,13 @@ class ProductForm extends Component
     public function updatedImage(): void
     {
         $this->removeImage = false;
+        $this->validateOnly('image', [
+            'image' => self::IMAGE_RULES,
+        ]);
 
-        try {
-            $this->validateOnly('image', [
-                'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-            ]);
-        } catch (ValidationException $exception) {
-            $this->image = null;
-
-            throw $exception;
+        if ($this->image && $this->product?->exists) {
+            $this->product = $this->persistImage($this->product);
+            session()->flash('success', 'Product image uploaded.');
         }
     }
 
