@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Permission;
+use App\Models\Role;
 use Illuminate\Database\Seeder;
 
 class PermissionSeeder extends Seeder
@@ -37,5 +38,41 @@ class PermissionSeeder extends Seeder
         foreach ($permissions as $permission) {
             Permission::updateOrCreate(['slug' => $permission['slug']], $permission);
         }
+
+        $this->syncSystemRolePermissions();
+    }
+
+    private function syncSystemRolePermissions(): void
+    {
+        $allPermissionIds = Permission::query()->pluck('id');
+        $managerPermissionIds = Permission::query()
+            ->whereNotIn('slug', ['staff.manage'])
+            ->pluck('id');
+        $cashierPermissionSlugs = [
+            'dashboard.view', 'pos.access', 'orders.view', 'orders.manage', 'menu.view',
+            'inventory.view', 'tables.view', 'payments.process', 'customers.view', 'promotions.view',
+        ];
+        $cashierPermissionIds = Permission::query()
+            ->whereIn('slug', $cashierPermissionSlugs)
+            ->pluck('id');
+        $kitchenPermissionIds = Permission::query()
+            ->whereIn('slug', ['orders.view', 'kitchen.access'])
+            ->pluck('id');
+
+        Role::query()->where('slug', 'owner')->each(
+            fn (Role $role) => $role->permissions()->sync($allPermissionIds)
+        );
+
+        Role::query()->where('slug', 'manager')->each(
+            fn (Role $role) => $role->permissions()->sync($managerPermissionIds)
+        );
+
+        Role::query()->whereIn('slug', ['cashier', 'waiter'])->each(
+            fn (Role $role) => $role->permissions()->sync($cashierPermissionIds)
+        );
+
+        Role::query()->where('slug', 'kitchen')->each(
+            fn (Role $role) => $role->permissions()->sync($kitchenPermissionIds)
+        );
     }
 }
