@@ -140,6 +140,7 @@
     <x-mobile-install-banner />
 
     @livewireScripts
+    @include('partials.livewire-same-origin')
     @stack('scripts')
 </body>
 </html>

@@ -14,5 +14,6 @@
 <body class="min-h-screen bg-slate-950 font-sans antialiased text-white">
     {{ $slot }}
     @livewireScripts
+    @include('partials.livewire-same-origin')
 </body>
 </html>

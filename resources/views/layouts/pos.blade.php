@@ -15,5 +15,6 @@
 <body class="overflow-hidden bg-slate-50 font-sans antialiased">
     {{ $slot }}
     @livewireScripts
+    @include('partials.livewire-same-origin')
 </body>
 </html>
