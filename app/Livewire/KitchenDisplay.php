@@ -46,7 +46,9 @@ class KitchenDisplay extends Component
             $newIds = array_values(array_diff($pendingIds, $previousPendingIds));
 
             if ($newIds !== []) {
-                $this->dispatch('kitchen-new-order', count: count($newIds));
+                $count = count($newIds);
+                $this->dispatch('kitchen-new-order', count: $count);
+                $this->js("window.kotbeanPlayKitchenAlert?.({$count})");
             }
         }
 

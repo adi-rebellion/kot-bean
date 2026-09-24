@@ -8,7 +8,7 @@
     <title>{{ $title ?? 'Kitchen' }} — KotBean</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=dm-sans:400,500,600,700" rel="stylesheet" />
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @vite(['resources/css/app.css', 'resources/js/kitchen-alert.js'])
     @livewireStyles
 </head>
 <body class="min-h-screen bg-slate-950 font-sans antialiased text-white">

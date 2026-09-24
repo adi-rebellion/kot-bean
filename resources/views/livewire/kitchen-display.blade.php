@@ -1,9 +1,38 @@
 <div
     wire:poll.5s="refreshKots"
-    x-data
-    x-on:click.once="window.kotbeanUnlockKitchenAudio?.()"
+    x-data="{ soundReady: window.kotbeanIsKitchenAudioUnlocked?.() ?? false }"
+    x-init="
+        document.addEventListener('kitchen-audio-unlocked', () => soundReady = true);
+        document.addEventListener('kitchen-audio-blocked', () => soundReady = false);
+    "
     class="flex min-h-screen flex-col"
 >
+    <div
+        x-show="!soundReady"
+        x-cloak
+        class="border-b border-amber-500/40 bg-amber-500/10 px-4 py-3"
+    >
+        <div class="mx-auto flex max-w-[1600px] flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p class="text-sm font-medium text-amber-100">Kitchen alerts are muted until you enable sound on this device.</p>
+            <div class="flex gap-2">
+                <button
+                    type="button"
+                    x-on:click="window.kotbeanUnlockKitchenAudio?.(); window.kotbeanPlayKitchenAlert?.(1); soundReady = window.kotbeanIsKitchenAudioUnlocked?.() ?? false"
+                    class="rounded-lg bg-amber-500 px-4 py-2 text-sm font-bold text-slate-950 hover:bg-amber-400"
+                >
+                    Enable Sound
+                </button>
+                <button
+                    type="button"
+                    x-on:click="window.kotbeanPlayKitchenAlert?.(1)"
+                    class="rounded-lg border border-amber-400/50 px-4 py-2 text-sm font-semibold text-amber-100 hover:bg-amber-500/10"
+                >
+                    Test Chime
+                </button>
+            </div>
+        </div>
+    </div>
+
     <header class="shrink-0 border-b border-slate-800 bg-slate-950">
         <div class="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
             <div class="flex items-center gap-3">
@@ -21,10 +50,18 @@
                 <span class="rounded-lg bg-orange-500/15 px-3 py-1.5 text-sm font-semibold text-orange-300">Cooking {{ $cookingTickets->count() }}</span>
                 <span class="rounded-lg bg-emerald-500/15 px-3 py-1.5 text-sm font-semibold text-emerald-300">Ready {{ $readyTickets->count() }}</span>
                 <button
+                    type="button"
+                    x-on:click="window.kotbeanPlayKitchenAlert?.(1)"
+                    class="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-1.5 text-sm font-semibold text-amber-200 hover:bg-amber-500/20"
+                >
+                    Test Sound
+                </button>
+                <button
                     wire:click="refreshKots"
                     wire:loading.attr="disabled"
                     wire:target="refreshKots"
                     type="button"
+                    x-on:click="window.kotbeanUnlockKitchenAudio?.()"
                     class="rounded-lg border border-slate-700 bg-slate-900 px-4 py-1.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
                 >
                     <span wire:loading.remove wire:target="refreshKots">Refresh</span>
@@ -93,63 +130,3 @@
         </main>
     @endif
 </div>
-
-@script
-<script>
-    let kitchenAudioContext = null;
-
-    function kitchenAudio() {
-        if (!kitchenAudioContext) {
-            kitchenAudioContext = new (window.AudioContext || window.webkitAudioContext)();
-        }
-
-        return kitchenAudioContext;
-    }
-
-    window.kotbeanUnlockKitchenAudio = function () {
-        const ctx = kitchenAudio();
-
-        if (ctx.state === 'suspended') {
-            ctx.resume();
-        }
-    };
-
-    function playTone(ctx, frequency, start, duration) {
-        const oscillator = ctx.createOscillator();
-        const gain = ctx.createGain();
-
-        oscillator.type = 'sine';
-        oscillator.frequency.value = frequency;
-        gain.gain.setValueAtTime(0.0001, start);
-        gain.gain.exponentialRampToValueAtTime(0.35, start + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
-
-        oscillator.connect(gain);
-        gain.connect(ctx.destination);
-        oscillator.start(start);
-        oscillator.stop(start + duration + 0.05);
-    }
-
-    window.kotbeanPlayKitchenAlert = function (count = 1) {
-        const ctx = kitchenAudio();
-        const repeats = Math.min(Math.max(count, 1), 3);
-        const base = ctx.currentTime + 0.05;
-
-        if (ctx.state === 'suspended') {
-            ctx.resume().then(() => window.kotbeanPlayKitchenAlert(count)).catch(() => {});
-
-            return;
-        }
-
-        for (let repeat = 0; repeat < repeats; repeat++) {
-            const offset = repeat * 0.55;
-            playTone(ctx, 880, base + offset, 0.18);
-            playTone(ctx, 1174, base + offset + 0.2, 0.22);
-        }
-    };
-
-    $wire.on('kitchen-new-order', (event) => {
-        window.kotbeanPlayKitchenAlert(event.count ?? 1);
-    });
-</script>
-@endscript
