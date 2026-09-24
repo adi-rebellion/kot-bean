@@ -7,6 +7,7 @@ use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
 use App\Exceptions\InsufficientStockException;
 use App\Models\Category;
+use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
@@ -15,6 +16,7 @@ use App\Models\RestaurantTable;
 use App\Services\CustomerService;
 use App\Services\OrderService;
 use App\Services\PaymentService;
+use App\Services\PromotionService;
 use App\Services\TableService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
@@ -65,6 +67,8 @@ class PosPage extends Component
 
     public string $orderNotes = '';
 
+    public string $promoCode = '';
+
     /** @var Collection<int, Product> */
     public Collection $variantOptions;
 
@@ -72,10 +76,16 @@ class PosPage extends Component
 
     protected PaymentService $paymentService;
 
-    public function boot(OrderService $orderService, PaymentService $paymentService): void
-    {
+    protected PromotionService $promotionService;
+
+    public function boot(
+        OrderService $orderService,
+        PaymentService $paymentService,
+        PromotionService $promotionService,
+    ): void {
         $this->orderService = $orderService;
         $this->paymentService = $paymentService;
+        $this->promotionService = $promotionService;
     }
 
     public function mount(?int $order = null): void
@@ -125,6 +135,55 @@ class PosPage extends Component
     public function updatedCustomerPhone(): void
     {
         $this->syncOrderMeta();
+        $this->refreshPromotions();
+    }
+
+    public function applyPromoCode(): void
+    {
+        $code = strtoupper(trim($this->promoCode));
+
+        if ($code === '') {
+            $this->errorMessage = 'Enter a promo code.';
+
+            return;
+        }
+
+        try {
+            $order = $this->getOrCreateOrder();
+            $promotion = $this->promotionService->findByCode($order->restaurant_id, $code);
+
+            if (! $promotion) {
+                $this->errorMessage = 'Promo code not found.';
+
+                return;
+            }
+
+            $customer = $this->resolveCustomerForPromotion($order);
+            $this->promotionService->applyToOrder($order, $promotion, $customer);
+            $this->promoCode = '';
+            $this->errorMessage = '';
+            $this->successMessage = "Applied {$promotion->name}.";
+        } catch (InvalidArgumentException $e) {
+            $this->errorMessage = $e->getMessage();
+        }
+    }
+
+    public function removePromotion(): void
+    {
+        try {
+            $order = $this->getCurrentOrder();
+
+            if (! $order) {
+                return;
+            }
+
+            $this->promotionService->removeFromOrder($order);
+            $this->promoCode = '';
+            $this->errorMessage = '';
+            $this->successMessage = 'Promotion removed.';
+        } catch (InvalidArgumentException $e) {
+            $this->errorMessage = $e->getMessage();
+        }
     }
 
     public function selectTable(int $tableId): void
@@ -225,6 +284,7 @@ class PosPage extends Component
             $item = $this->findCartItem($itemId);
             $this->orderService->removeItem($item);
             $this->errorMessage = '';
+            $this->refreshPromotions();
         } catch (InvalidArgumentException $e) {
             $this->errorMessage = $e->getMessage();
         }
@@ -349,6 +409,7 @@ class PosPage extends Component
         $this->deliveryAddress = '';
         $this->deliveryPhone = '';
         $this->orderNotes = '';
+        $this->promoCode = '';
         $this->errorMessage = '';
         $this->showPaymentModal = false;
         $this->showVariantModal = false;
@@ -416,6 +477,7 @@ class PosPage extends Component
 
             $this->errorMessage = '';
             $this->successMessage = '';
+            $this->refreshPromotions($order->fresh(['items', 'customer', 'promotion']));
             $this->dispatch('item-added');
         } catch (InsufficientStockException $e) {
             $name = $e->variant
@@ -434,6 +496,7 @@ class PosPage extends Component
             $newQty = $item->quantity + $delta;
             $this->orderService->updateItemQuantity($item, $newQty);
             $this->errorMessage = '';
+            $this->refreshPromotions();
         } catch (InsufficientStockException $e) {
             $name = $e->variant
                 ? "{$e->product->name} ({$e->variant->name})"
@@ -442,6 +505,53 @@ class PosPage extends Component
         } catch (InvalidArgumentException $e) {
             $this->errorMessage = $e->getMessage();
         }
+    }
+
+    private function refreshPromotions(?Order $order = null): void
+    {
+        $order ??= $this->getCurrentOrder();
+
+        if (! $order || $order->status !== OrderStatus::Draft) {
+            return;
+        }
+
+        $order = $order->fresh(['items', 'promotion']);
+        $customer = $this->resolveCustomerForPromotion($order);
+
+        if ($order->promotion_id && ! $order->promotion?->auto_apply) {
+            if ($this->promotionService->isEligible($order->promotion, $order, $customer)) {
+                $discount = $this->promotionService->calculateDiscountAmount($order->promotion, $order);
+
+                if ((float) $order->discount_amount !== $discount) {
+                    $order->update(['discount_amount' => $discount]);
+                    $this->orderService->recalculateTotals($order);
+                }
+            } else {
+                $this->promotionService->removeFromOrder($order);
+            }
+
+            return;
+        }
+
+        $this->promotionService->syncAutoApply($order, $customer);
+    }
+
+    private function resolveCustomerForPromotion(Order $order): ?Customer
+    {
+        $order->loadMissing('customer');
+
+        if ($order->customer_id) {
+            return $order->customer;
+        }
+
+        $name = trim($this->customerName);
+        $phone = trim($this->customerPhone);
+
+        if ($name === '' || $phone === '') {
+            return null;
+        }
+
+        return app(CustomerService::class)->findOrCreate($order->restaurant_id, $name, $phone);
     }
 
     private function findCartItem(int $itemId): OrderItem
@@ -480,7 +590,7 @@ class PosPage extends Component
             return null;
         }
 
-        return Order::with(['items', 'customer'])->find($this->orderId);
+        return Order::with(['items', 'customer', 'promotion'])->find($this->orderId);
     }
 
     private function syncOrderMeta(?Order $order = null): void

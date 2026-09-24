@@ -55,7 +55,7 @@ class DemoRestaurantSeeder extends Seeder
         $matrix = [
             'owner' => Permission::pluck('slug')->all(),
             'manager' => Permission::whereNotIn('slug', ['staff.manage'])->pluck('slug')->all(),
-            'cashier' => ['dashboard.view', 'pos.access', 'orders.view', 'orders.manage', 'menu.view', 'inventory.view', 'tables.view', 'payments.process', 'customers.view'],
+            'cashier' => ['dashboard.view', 'pos.access', 'orders.view', 'orders.manage', 'menu.view', 'inventory.view', 'tables.view', 'payments.process', 'customers.view', 'promotions.view'],
             'waiter' => ['dashboard.view', 'pos.access', 'orders.view', 'orders.manage', 'menu.view', 'inventory.view', 'tables.view', 'tables.manage', 'payments.process', 'customers.view'],
             'kitchen' => ['orders.view', 'kitchen.access'],
         ];

@@ -239,6 +239,17 @@
                             <span>Tax</span>
                             <span>₹{{ number_format((float) $order->tax_amount, 2) }}</span>
                         </div>
+                        @if ((float) $order->discount_amount > 0)
+                            <div class="flex justify-between text-emerald-600">
+                                <span>
+                                    Discount
+                                    @if ($order->promotion)
+                                        <span class="text-xs">({{ $order->promotion->name }})</span>
+                                    @endif
+                                </span>
+                                <span>-₹{{ number_format((float) $order->discount_amount, 2) }}</span>
+                            </div>
+                        @endif
                         <div class="flex justify-between border-t border-slate-200 pt-2 text-xl font-bold text-slate-900">
                             <span>Total</span>
                             <span class="text-amber-600">₹{{ number_format((float) $order->total, 2) }}</span>
@@ -275,6 +286,19 @@
                         x-text="showExtras ? 'Hide customer & notes ▲' : 'Customer & notes ▼'"
                     ></button>
                     <div x-show="showExtras" x-cloak class="mt-2 space-y-2">
+                        <div class="rounded-xl border border-slate-200 bg-white p-3">
+                            <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Promo code</p>
+                            @if ($order->promotion)
+                                <div class="mb-2 flex items-center justify-between rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                                    <span>{{ $order->promotion->name }} applied</span>
+                                    <button wire:click="removePromotion" type="button" class="text-xs font-semibold underline">Remove</button>
+                                </div>
+                            @endif
+                            <div class="flex gap-2">
+                                <input wire:model="promoCode" type="text" placeholder="Enter code" class="w-full rounded-xl border-slate-200 text-sm uppercase focus:border-amber-500 focus:ring-amber-500/30">
+                                <button wire:click="applyPromoCode" type="button" class="shrink-0 rounded-xl bg-slate-800 px-3 py-2 text-xs font-semibold text-white">Apply</button>
+                            </div>
+                        </div>
                         <div class="rounded-xl border border-slate-200 bg-white p-3">
                             <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Customer (optional)</p>
                             <div class="space-y-2">

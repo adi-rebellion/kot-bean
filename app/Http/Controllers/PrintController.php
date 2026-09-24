@@ -10,7 +10,7 @@ class PrintController extends Controller
 {
     public function invoice(Order $order): View
     {
-        $order->load(['items', 'payments', 'restaurant', 'table']);
+        $order->load(['items', 'payments', 'restaurant', 'table', 'promotion']);
 
         return view('print.invoice', compact('order'));
     }

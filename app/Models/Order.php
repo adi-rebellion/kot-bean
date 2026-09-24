@@ -29,6 +29,7 @@ class Order extends Model
         'subtotal',
         'tax_amount',
         'discount_amount',
+        'promotion_id',
         'total',
         'notes',
         'delivery_address',
@@ -66,6 +67,11 @@ class Order extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function promotion(): BelongsTo
+    {
+        return $this->belongsTo(Promotion::class);
     }
 
     public function creator(): BelongsTo

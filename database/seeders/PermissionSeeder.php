@@ -23,6 +23,8 @@ class PermissionSeeder extends Seeder
             ['slug' => 'inventory.manage', 'name' => 'Manage Inventory', 'group' => 'inventory'],
             ['slug' => 'customers.view', 'name' => 'View Customers', 'group' => 'customers'],
             ['slug' => 'customers.manage', 'name' => 'Manage Customers', 'group' => 'customers'],
+            ['slug' => 'promotions.view', 'name' => 'View Promotions', 'group' => 'promotions'],
+            ['slug' => 'promotions.manage', 'name' => 'Manage Promotions', 'group' => 'promotions'],
             ['slug' => 'reports.view', 'name' => 'View Reports', 'group' => 'reports'],
             ['slug' => 'revenue.view', 'name' => 'View Revenue', 'group' => 'reports'],
             ['slug' => 'staff.manage', 'name' => 'Manage Staff', 'group' => 'staff'],

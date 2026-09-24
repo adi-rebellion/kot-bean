@@ -12,6 +12,7 @@ use App\Livewire\Menu\ProductForm;
 use App\Livewire\Menu\ProductsIndex;
 use App\Livewire\OrdersIndex;
 use App\Livewire\PosPage;
+use App\Livewire\PromotionsIndex;
 use App\Livewire\ReportsIndex;
 use App\Livewire\SettingsPage;
 use App\Livewire\StaffIndex;
@@ -72,6 +73,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('/customers', CustomersIndex::class)
         ->middleware('permission:customers.view')
         ->name('customers.index');
+
+    Route::livewire('/promotions', PromotionsIndex::class)
+        ->middleware('permission:promotions.view')
+        ->name('promotions.index');
 
     Route::livewire('/reports', ReportsIndex::class)
         ->middleware('permission:reports.view')

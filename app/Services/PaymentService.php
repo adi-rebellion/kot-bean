@@ -96,6 +96,8 @@ class PaymentService
                 }
             }
 
+            app(PromotionService::class)->recordRedemption($order);
+
             if ($order->restaurant_table_id) {
                 app(TableService::class)->releaseTable($order->restaurantTable);
             }
