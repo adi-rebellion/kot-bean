@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+    .bg-brand {
+        background-color: var(--brand-color);
+    }
+
+    .hover\:bg-brand-hover:hover {
+        background-color: var(--brand-color-hover);
+    }
+
+    .text-brand {
+        color: var(--brand-color);
+    }
+
+    .border-brand {
+        border-color: var(--brand-color);
+    }
+
+    .ring-brand {
+        --tw-ring-color: color-mix(in srgb, var(--brand-color) 35%, transparent);
+    }
+
+    .nav-link-active {
+        background-color: var(--brand-color-soft);
+        color: var(--brand-color);
+    }
+
+    .focus-brand:focus {
+        border-color: var(--brand-color);
+        --tw-ring-color: color-mix(in srgb, var(--brand-color) 35%, transparent);
+    }
+
+    .safe-bottom {
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    .safe-top {
+        padding-top: env(safe-area-inset-top, 0px);
+    }
+
+    html.native-app body {
+        -webkit-tap-highlight-color: transparent;
+        overscroll-behavior-y: none;
+    }
+
+    .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+[x-cloak] {
+    display: none !important;
+}

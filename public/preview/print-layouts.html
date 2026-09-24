@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>KotBean — Print Layout Preview</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: system-ui, sans-serif;
+            background: #f1f5f9;
+            color: #0f172a;
+            margin: 0;
+            padding: 24px 16px 48px;
+        }
+        h1 { font-size: 1.5rem; margin: 0 0 8px; }
+        .intro { color: #64748b; font-size: 0.95rem; max-width: 640px; margin-bottom: 32px; }
+        .grid {
+            display: grid;
+            gap: 32px;
+            max-width: 960px;
+        }
+        @media (min-width: 768px) {
+            .grid { grid-template-columns: 1fr 1fr; }
+        }
+        .panel h2 {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            margin: 0 0 12px;
+        }
+        .paper-wrap {
+            background: #fff;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,.06);
+        }
+        /* KOT — matches print/kot.blade.php */
+        .kot-paper {
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            width: 300px;
+            padding: 16px;
+            background: #fff;
+            border: 1px dashed #94a3b8;
+        }
+        .kot-paper h3 {
+            font-size: 18px;
+            margin: 0 0 8px;
+            text-align: center;
+        }
+        .kot-meta {
+            text-align: center;
+            font-size: 14px;
+            margin-bottom: 16px;
+            border-bottom: 1px dashed #000;
+            padding-bottom: 8px;
+        }
+        .kot-item { font-size: 16px; margin: 8px 0; }
+        .kot-note { font-size: 12px; padding-left: 16px; color: #475569; }
+
+        /* Invoice — matches print/invoice.blade.php */
+        .invoice-paper {
+            font-family: system-ui, sans-serif;
+            width: 400px;
+            padding: 24px;
+            color: #111;
+            background: #fff;
+            border: 1px dashed #94a3b8;
+        }
+        .invoice-header {
+            text-align: center;
+            margin-bottom: 24px;
+            border-bottom: 2px dashed #ccc;
+            padding-bottom: 16px;
+        }
+        .invoice-header h3 { margin: 0 0 4px; font-size: 20px; }
+        .invoice-header p { font-size: 12px; margin: 4px 0; color: #666; }
+        .invoice-meta { font-size: 12px; color: #666; margin-bottom: 16px; }
+        .invoice-paper table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .invoice-paper td { padding: 6px 0; vertical-align: top; }
+        .invoice-totals { border-top: 2px solid #111; margin-top: 12px; padding-top: 12px; }
+        .invoice-totals td { font-weight: 600; }
+        .invoice-footer {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 11px;
+            color: #888;
+        }
+        .note {
+            margin-top: 32px;
+            max-width: 960px;
+            padding: 16px;
+            background: #fffbeb;
+            border: 1px solid #fcd34d;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #92400e;
+        }
+        code { background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-size: 0.85em; }
+    </style>
+</head>
+<body>
+    <h1>KotBean print layouts — preview</h1>
+    <p class="intro">
+        This shows exactly how the current KOT and invoice pages look before printing.
+        The live print URLs auto-open the browser print dialog — this page does not.
+    </p>
+
+    <div class="grid">
+        <div class="panel">
+            <h2>Kitchen Order Ticket (KOT) · 300px / ~80mm</h2>
+            <div class="paper-wrap">
+                <div class="kot-paper">
+                    <h3>KOT #KOT-000006</h3>
+                    <div class="kot-meta">4:39 PM</div>
+                    <div class="kot-item"><strong>1×</strong> Espresso</div>
+                    <div class="kot-item"><strong>1×</strong> Iced Latte</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>Customer invoice · 400px</h2>
+            <div class="paper-wrap">
+                <div class="invoice-paper">
+                    <div class="invoice-header">
+                        <h3>Mr Bean Coffee Co.</h3>
+                        <p>42 Coffee Lane, Koramangala, Bengaluru 560034</p>
+                        <p>GSTIN: 29AABCU9603R1ZX</p>
+                    </div>
+                    <div class="invoice-meta">
+                        <strong>Invoice:</strong> ORD-000182<br>
+                        <strong>Date:</strong> 24 Sep 2026, 4:39 PM
+                    </div>
+                    <table>
+                        <tr>
+                            <td>Espresso<br><small>1 × ₹80.00</small></td>
+                            <td style="text-align:right">₹84.00</td>
+                        </tr>
+                        <tr>
+                            <td>Americano<br><small>1 × ₹100.00</small></td>
+                            <td style="text-align:right">₹105.00</td>
+                        </tr>
+                    </table>
+                    <table class="invoice-totals">
+                        <tr><td>Subtotal</td><td style="text-align:right">₹180.00</td></tr>
+                        <tr><td>Tax</td><td style="text-align:right">₹9.00</td></tr>
+                        <tr><td>TOTAL</td><td style="text-align:right">₹189.00</td></tr>
+                    </table>
+                    <p style="font-size:12px;margin-top:16px"><strong>Payment:</strong> Cash</p>
+                    <div class="invoice-footer">Thank you for dining with us!</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="note">
+        <strong>Live print URLs</strong> (login required, opens print dialog immediately):<br>
+        KOT → <code>/kots/6/print</code> &nbsp;·&nbsp;
+        Invoice → <code>/orders/182/invoice</code>
+    </div>
+</body>
+</html>
