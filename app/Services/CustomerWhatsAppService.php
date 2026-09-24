@@ -13,7 +13,14 @@ class CustomerWhatsAppService
         private readonly TwilioWhatsAppService $twilioWhatsAppService,
     ) {}
 
-    public function buildLastOrderMessage(Customer $customer, ?Order $order = null, ?string $extraNote = null): string
+    /**
+     * Template variables for Twilio ContentSid ({{1}}–{{7}}):
+     * 1 = customer name, 2 = restaurant, 3 = order number,
+     * 4 = date, 5 = items, 6 = total, 7 = optional note
+     *
+     * @return array<string, string>
+     */
+    public function buildTemplateVariables(Customer $customer, ?Order $order = null, ?string $extraNote = null): array
     {
         $order ??= $customer->latestOrder;
 
@@ -31,24 +38,34 @@ class CustomerWhatsAppService
             ->map(fn (OrderItem $item): string => sprintf('%dx %s', $item->quantity, $item->product_name))
             ->implode(', ');
 
+        return [
+            '1' => $customer->name,
+            '2' => $customer->restaurant->name,
+            '3' => $order->order_number,
+            '4' => $orderDate,
+            '5' => $items,
+            '6' => '₹'.number_format((float) $order->total, 2),
+            '7' => ($extraNote !== null && trim($extraNote) !== '') ? trim($extraNote) : 'We hope to serve you again soon!',
+        ];
+    }
+
+    public function buildLastOrderMessage(Customer $customer, ?Order $order = null, ?string $extraNote = null): string
+    {
+        $variables = $this->buildTemplateVariables($customer, $order, $extraNote);
+
         $lines = [
-            "Hi {$customer->name},",
+            "Hi {$variables['1']},",
             '',
-            "Thank you for dining with us at {$customer->restaurant->name}!",
+            "Thank you for dining with us at {$variables['2']}!",
             '',
             'Here are the details of your last order:',
-            "Order: {$order->order_number}",
-            "Date: {$orderDate}",
-            "Items: {$items}",
-            'Total: ₹'.number_format((float) $order->total, 2),
+            "Order: {$variables['3']}",
+            "Date: {$variables['4']}",
+            "Items: {$variables['5']}",
+            "Total: {$variables['6']}",
             '',
-            'We hope to serve you again soon!',
+            $variables['7'],
         ];
-
-        if ($extraNote !== null && trim($extraNote) !== '') {
-            $lines[] = '';
-            $lines[] = trim($extraNote);
-        }
 
         return implode("\n", $lines);
     }
@@ -59,8 +76,8 @@ class CustomerWhatsAppService
             throw new InvalidArgumentException('Customer does not have a phone number.');
         }
 
-        $message = $this->buildLastOrderMessage($customer, extraNote: $extraNote);
+        $variables = $this->buildTemplateVariables($customer, extraNote: $extraNote);
 
-        return $this->twilioWhatsAppService->send($customer->phone, $message);
+        return $this->twilioWhatsAppService->sendTemplate($customer->phone, $variables);
     }
 }

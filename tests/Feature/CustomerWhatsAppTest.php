@@ -40,6 +40,7 @@ class CustomerWhatsAppTest extends TestCase
             'services.twilio.sid' => 'ACtest123',
             'services.twilio.auth_token' => 'test-token',
             'services.twilio.whatsapp_from' => 'whatsapp:+14155238886',
+            'services.twilio.whatsapp_content_sid' => 'HXtestcontent123',
         ]);
 
         $restaurant = Restaurant::create([
@@ -157,10 +158,14 @@ class CustomerWhatsAppTest extends TestCase
         $this->assertSame('SM123', $sid);
 
         Http::assertSent(function ($request) {
+            $variables = json_decode($request['ContentVariables'], true);
+
             return $request->url() === 'https://api.twilio.com/2010-04-01/Accounts/ACtest123/Messages.json'
                 && $request['To'] === 'whatsapp:+919876543210'
                 && $request['From'] === 'whatsapp:+14155238886'
-                && str_contains($request['Body'], 'ORD-20260925-0001');
+                && $request['ContentSid'] === 'HXtestcontent123'
+                && ($variables['3'] ?? null) === 'ORD-20260925-0001'
+                && ($variables['1'] ?? null) === 'Ravi Kumar';
         });
     }
 

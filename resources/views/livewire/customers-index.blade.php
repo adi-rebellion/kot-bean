@@ -40,7 +40,7 @@
     @if ($tab === 'whatsapp')
         @if (! $twilioConfigured)
             <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                Twilio WhatsApp is not configured. Add <code class="rounded bg-amber-100 px-1">TWILIO_SID</code>, <code class="rounded bg-amber-100 px-1">TWILIO_AUTH_TOKEN</code>, and <code class="rounded bg-amber-100 px-1">TWILIO_WHATSAPP_FROM</code> to your environment.
+                Twilio WhatsApp is not configured. Add <code class="rounded bg-amber-100 px-1">TWILIO_SID</code>, <code class="rounded bg-amber-100 px-1">TWILIO_AUTH_TOKEN</code>, <code class="rounded bg-amber-100 px-1">TWILIO_WHATSAPP_FROM</code>, and <code class="rounded bg-amber-100 px-1">TWILIO_WHATSAPP_CONTENT_SID</code> to your environment.
             </div>
         @endif
 

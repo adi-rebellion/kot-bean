@@ -11,26 +11,35 @@ class TwilioWhatsAppService
     {
         return filled(config('services.twilio.sid'))
             && filled(config('services.twilio.auth_token'))
-            && filled(config('services.twilio.whatsapp_from'));
+            && filled(config('services.twilio.whatsapp_from'))
+            && filled(config('services.twilio.whatsapp_content_sid'));
     }
 
-    public function send(string $toPhone, string $body): string
+    /**
+     * @param  array<string, string>  $variables
+     */
+    public function sendTemplate(string $toPhone, array $variables, ?string $contentSid = null): string
     {
         if (! $this->isConfigured()) {
             throw new RuntimeException('Twilio WhatsApp is not configured.');
         }
 
+        $contentSid ??= config('services.twilio.whatsapp_content_sid');
+
+        $payload = [
+            'From' => $this->formatFromNumber(config('services.twilio.whatsapp_from')),
+            'To' => $this->formatWhatsAppNumber($toPhone),
+            'ContentSid' => $contentSid,
+        ];
+
+        if ($variables !== []) {
+            $payload['ContentVariables'] = json_encode($variables, JSON_THROW_ON_ERROR);
+        }
+
         $response = Http::withBasicAuth(
             config('services.twilio.sid'),
             config('services.twilio.auth_token'),
-        )->asForm()->post(
-            $this->messagesUrl(),
-            [
-                'From' => $this->formatFromNumber(config('services.twilio.whatsapp_from')),
-                'To' => $this->formatWhatsAppNumber($toPhone),
-                'Body' => $body,
-            ]
-        );
+        )->asForm()->post($this->messagesUrl(), $payload);
 
         if (! $response->successful()) {
             throw new RuntimeException(
