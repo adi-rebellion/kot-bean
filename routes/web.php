@@ -28,8 +28,8 @@ Route::get('/manifest.webmanifest', [PwaController::class, 'manifest'])->name('p
 Route::get('/', function () {
     return auth()->check()
         ? redirect()->route('dashboard')
-        : redirect()->route('login');
-});
+        : view('welcome');
+})->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('/dashboard', DashboardPage::class)

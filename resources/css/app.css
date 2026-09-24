@@ -59,3 +59,43 @@
 [x-cloak] {
     display: none !important;
 }
+
+/* Marketing landing page */
+.landing-hero {
+    background-color: #020617;
+}
+
+.landing-glow {
+    background:
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(245, 158, 11, 0.18), transparent),
+        radial-gradient(ellipse 50% 40% at 100% 0%, rgba(217, 119, 6, 0.12), transparent),
+        radial-gradient(ellipse 40% 30% at 0% 50%, rgba(245, 158, 11, 0.08), transparent);
+}
+
+.landing-grid {
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 64px 64px;
+}
+
+.landing-float {
+    animation: landing-float 6s ease-in-out infinite;
+}
+
+.landing-float-delay {
+    animation: landing-float 6s ease-in-out 3s infinite;
+}
+
+@keyframes landing-float {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-8px);
+    }
+}
+
+.landing-cta {
+    background: linear-gradient(135deg, #78350f 0%, #b45309 40%, #d97706 100%);
+}
