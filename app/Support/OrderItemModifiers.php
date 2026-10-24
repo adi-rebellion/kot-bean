@@ -5,7 +5,7 @@ namespace App\Support;
 class OrderItemModifiers
 {
     /**
-     * @param  array<int, array{group_id: int, group_name: string, option_id: int, option_name: string, price: float|string}>  $modifiers
+     * @param  array<int, array{addon_id: int, name: string, price: float|string}>  $modifiers
      */
     public static function fingerprint(array $modifiers): ?string
     {
@@ -13,17 +13,18 @@ class OrderItemModifiers
             return null;
         }
 
-        $optionIds = collect($modifiers)
-            ->pluck('option_id')
+        $addonIds = collect($modifiers)
+            ->map(fn (array $row) => $row['addon_id'] ?? $row['option_id'] ?? null)
+            ->filter()
             ->sort()
             ->values()
             ->all();
 
-        return hash('sha256', implode(',', $optionIds));
+        return hash('sha256', implode(',', $addonIds));
     }
 
     /**
-     * @param  array<int, array{group_id: int, group_name: string, option_id: int, option_name: string, price: float|string}>  $modifiers
+     * @param  array<int, array{addon_id: int, name: string, price: float|string}>  $modifiers
      */
     public static function addonTotal(array $modifiers): float
     {
@@ -31,7 +32,7 @@ class OrderItemModifiers
     }
 
     /**
-     * @param  array<int, array{group_id: int, group_name: string, option_id: int, option_name: string, price: float|string}>|null  $modifiers
+     * @param  array<int, array{addon_id: int, name: string, price: float|string}>|null  $modifiers
      */
     public static function kitchenNotes(?array $modifiers): ?string
     {
@@ -41,9 +42,10 @@ class OrderItemModifiers
 
         $lines = collect($modifiers)->map(function (array $row): string {
             $price = (float) $row['price'];
+            $name = $row['name'] ?? $row['option_name'] ?? '';
             $suffix = $price > 0 ? ' (+₹'.number_format($price, 0).')' : '';
 
-            return $row['group_name'].': '.$row['option_name'].$suffix;
+            return $name.$suffix;
         });
 
         return $lines->implode('; ');

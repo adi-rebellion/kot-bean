@@ -5,10 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class ProductAddonOption extends Model
+class ProductAddon extends Model
 {
     protected $fillable = [
-        'product_addon_group_id',
+        'product_id',
         'name',
         'price',
         'is_available',
@@ -24,8 +24,8 @@ class ProductAddonOption extends Model
         ];
     }
 
-    public function group(): BelongsTo
+    public function product(): BelongsTo
     {
-        return $this->belongsTo(ProductAddonGroup::class, 'product_addon_group_id');
+        return $this->belongsTo(Product::class);
     }
 }

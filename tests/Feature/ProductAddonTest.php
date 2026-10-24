@@ -2,12 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Enums\AddonSelectionType;
 use App\Livewire\Menu\ProductForm;
 use App\Models\Category;
 use App\Models\Product;
-use App\Models\ProductAddonGroup;
-use App\Models\ProductAddonOption;
+use App\Models\ProductAddon;
 use App\Models\Restaurant;
 use App\Models\Role;
 use App\Models\User;
@@ -69,46 +67,26 @@ class ProductAddonTest extends TestCase
         ]);
     }
 
-    public function test_manager_can_create_addon_group_and_option(): void
+    public function test_manager_can_add_product_customization(): void
     {
         Livewire::actingAs($this->manager)
             ->test(ProductForm::class, ['product' => $this->product])
-            ->set('addonGroupName', 'Extras')
-            ->set('addonGroupSelectionType', 'single')
-            ->call('saveAddonGroup')
+            ->set('addonName', 'Extra cheese')
+            ->set('addonPrice', '20')
+            ->call('saveAddon')
             ->assertHasNoErrors();
 
-        $group = ProductAddonGroup::query()->where('product_id', $this->product->id)->first();
+        $addon = ProductAddon::query()->where('product_id', $this->product->id)->first();
 
-        $this->assertNotNull($group);
-        $this->assertSame('Extras', $group->name);
-        $this->assertSame(AddonSelectionType::Single, $group->selection_type);
-
-        Livewire::actingAs($this->manager)
-            ->test(ProductForm::class, ['product' => $this->product])
-            ->set('addonOptionGroupId', $group->id)
-            ->set('addonOptionName', 'Extra cheese')
-            ->set('addonOptionPrice', '20')
-            ->call('saveAddonOption')
-            ->assertHasNoErrors();
-
-        $option = ProductAddonOption::query()->where('product_addon_group_id', $group->id)->first();
-
-        $this->assertNotNull($option);
-        $this->assertSame('Extra cheese', $option->name);
-        $this->assertSame('20.00', (string) $option->price);
+        $this->assertNotNull($addon);
+        $this->assertSame('Extra cheese', $addon->name);
+        $this->assertSame('20.00', (string) $addon->price);
     }
 
-    public function test_order_item_includes_addon_price_in_unit_price(): void
+    public function test_order_item_includes_customization_price_in_unit_price(): void
     {
-        $group = ProductAddonGroup::create([
+        $addon = ProductAddon::create([
             'product_id' => $this->product->id,
-            'name' => 'Extras',
-            'selection_type' => AddonSelectionType::Single,
-        ]);
-
-        $option = ProductAddonOption::create([
-            'product_addon_group_id' => $group->id,
             'name' => 'Extra cheese',
             'price' => 20,
         ]);
@@ -118,10 +96,8 @@ class ProductAddonTest extends TestCase
 
         $item = $orderService->addItem($order, $this->product, 1, null, null, [
             [
-                'group_id' => $group->id,
-                'group_name' => $group->name,
-                'option_id' => $option->id,
-                'option_name' => $option->name,
+                'addon_id' => $addon->id,
+                'name' => $addon->name,
                 'price' => 20.0,
             ],
         ]);
@@ -155,6 +131,6 @@ class ProductAddonTest extends TestCase
             ->test(ProductForm::class)
             ->assertDontSee('Description')
             ->assertDontSee('Track inventory')
-            ->assertSee('Add-ons');
+            ->assertSee('Customizations');
     }
 }

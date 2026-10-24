@@ -2,13 +2,11 @@
 
 namespace App\Livewire\Menu;
 
-use App\Enums\AddonSelectionType;
 use App\Enums\AiGenerationStatus;
 use App\Models\AiImageGeneration;
 use App\Models\Category;
 use App\Models\Product;
-use App\Models\ProductAddonGroup;
-use App\Models\ProductAddonOption;
+use App\Models\ProductAddon;
 use App\Models\ProductVariant;
 use App\Services\AiImageService;
 use App\Services\ProductService;
@@ -79,25 +77,13 @@ class ProductForm extends Component
 
     public bool $removeImage = false;
 
-    public ?int $editingAddonGroupId = null;
+    public ?int $editingAddonId = null;
 
-    public string $addonGroupName = '';
+    public string $addonName = '';
 
-    public string $addonGroupSelectionType = 'single';
+    public string $addonPrice = '0';
 
-    public bool $addonGroupIsRequired = false;
-
-    public ?int $addonGroupMaxSelections = null;
-
-    public ?int $editingAddonOptionId = null;
-
-    public ?int $addonOptionGroupId = null;
-
-    public string $addonOptionName = '';
-
-    public string $addonOptionPrice = '0';
-
-    public bool $addonOptionIsAvailable = true;
+    public bool $addonIsAvailable = true;
 
     public function mount(?Product $product = null): void
     {
@@ -375,173 +361,79 @@ class ProductForm extends Component
         $this->variantIsAvailable = true;
     }
 
-    public function editAddonGroup(int $groupId): void
+    public function editAddon(int $addonId): void
     {
         abort_unless(auth()->user()->hasPermission('menu.manage'), 403);
 
-        $group = ProductAddonGroup::query()
+        $addon = ProductAddon::query()
             ->where('product_id', $this->product?->id)
-            ->findOrFail($groupId);
+            ->findOrFail($addonId);
 
-        $this->editingAddonGroupId = $group->id;
-        $this->addonGroupName = $group->name;
-        $this->addonGroupSelectionType = $group->selection_type->value;
-        $this->addonGroupIsRequired = $group->is_required;
-        $this->addonGroupMaxSelections = $group->max_selections;
+        $this->editingAddonId = $addon->id;
+        $this->addonName = $addon->name;
+        $this->addonPrice = (string) $addon->price;
+        $this->addonIsAvailable = $addon->is_available;
     }
 
-    public function saveAddonGroup(): void
+    public function saveAddon(): void
     {
         abort_unless(auth()->user()->hasPermission('menu.manage'), 403);
 
         if (! $this->product?->exists) {
-            session()->flash('error', 'Save the product before adding add-on groups.');
+            session()->flash('error', 'Save the product before adding customizations.');
 
             return;
         }
 
         $data = $this->validate([
-            'addonGroupName' => ['required', 'string', 'max:255'],
-            'addonGroupSelectionType' => ['required', 'in:single,multiple'],
-            'addonGroupIsRequired' => ['boolean'],
-            'addonGroupMaxSelections' => ['nullable', 'integer', 'min:1', 'max:20'],
+            'addonName' => ['required', 'string', 'max:255'],
+            'addonPrice' => ['required', 'numeric', 'min:0'],
+            'addonIsAvailable' => ['boolean'],
         ]);
 
         $payload = [
-            'name' => $data['addonGroupName'],
-            'selection_type' => AddonSelectionType::from($data['addonGroupSelectionType']),
-            'is_required' => $data['addonGroupIsRequired'],
-            'max_selections' => $data['addonGroupSelectionType'] === 'multiple'
-                ? ($data['addonGroupMaxSelections'] ?? null)
-                : null,
+            'product_id' => $this->product->id,
+            'name' => $data['addonName'],
+            'price' => $data['addonPrice'],
+            'is_available' => $data['addonIsAvailable'],
         ];
 
-        if ($this->editingAddonGroupId) {
-            ProductAddonGroup::query()
+        if ($this->editingAddonId) {
+            ProductAddon::query()
                 ->where('product_id', $this->product->id)
-                ->findOrFail($this->editingAddonGroupId)
+                ->findOrFail($this->editingAddonId)
                 ->update($payload);
         } else {
-            ProductAddonGroup::create([
-                'product_id' => $this->product->id,
-                ...$payload,
-            ]);
+            ProductAddon::create($payload);
         }
 
-        $this->resetAddonGroupForm();
-        session()->flash('success', 'Add-on group saved.');
+        $this->resetAddonForm();
+        session()->flash('success', 'Customization saved.');
     }
 
-    public function deleteAddonGroup(int $groupId): void
+    public function deleteAddon(int $addonId): void
     {
         abort_unless(auth()->user()->hasPermission('menu.manage'), 403);
 
-        ProductAddonGroup::query()
+        ProductAddon::query()
             ->where('product_id', $this->product?->id)
-            ->findOrFail($groupId)
+            ->findOrFail($addonId)
             ->delete();
 
-        session()->flash('success', 'Add-on group deleted.');
+        session()->flash('success', 'Customization removed.');
     }
 
-    public function cancelAddonGroupForm(): void
+    public function cancelAddonForm(): void
     {
-        $this->resetAddonGroupForm();
+        $this->resetAddonForm();
     }
 
-    public function editAddonOption(int $optionId): void
+    private function resetAddonForm(): void
     {
-        abort_unless(auth()->user()->hasPermission('menu.manage'), 403);
-
-        $option = ProductAddonOption::query()
-            ->whereHas('group', fn ($query) => $query->where('product_id', $this->product?->id))
-            ->findOrFail($optionId);
-
-        $this->editingAddonOptionId = $option->id;
-        $this->addonOptionGroupId = $option->product_addon_group_id;
-        $this->addonOptionName = $option->name;
-        $this->addonOptionPrice = (string) $option->price;
-        $this->addonOptionIsAvailable = $option->is_available;
-    }
-
-    public function saveAddonOption(): void
-    {
-        abort_unless(auth()->user()->hasPermission('menu.manage'), 403);
-
-        if (! $this->product?->exists) {
-            session()->flash('error', 'Save the product before adding add-on options.');
-
-            return;
-        }
-
-        $data = $this->validate([
-            'addonOptionGroupId' => ['required', 'exists:product_addon_groups,id'],
-            'addonOptionName' => ['required', 'string', 'max:255'],
-            'addonOptionPrice' => ['required', 'numeric', 'min:0'],
-            'addonOptionIsAvailable' => ['boolean'],
-        ]);
-
-        abort_unless(
-            ProductAddonGroup::query()
-                ->where('product_id', $this->product->id)
-                ->whereKey($data['addonOptionGroupId'])
-                ->exists(),
-            403,
-        );
-
-        $payload = [
-            'product_addon_group_id' => $data['addonOptionGroupId'],
-            'name' => $data['addonOptionName'],
-            'price' => $data['addonOptionPrice'],
-            'is_available' => $data['addonOptionIsAvailable'],
-        ];
-
-        if ($this->editingAddonOptionId) {
-            ProductAddonOption::query()
-                ->whereHas('group', fn ($query) => $query->where('product_id', $this->product->id))
-                ->findOrFail($this->editingAddonOptionId)
-                ->update($payload);
-        } else {
-            ProductAddonOption::create($payload);
-        }
-
-        $this->resetAddonOptionForm();
-        session()->flash('success', 'Add-on option saved.');
-    }
-
-    public function deleteAddonOption(int $optionId): void
-    {
-        abort_unless(auth()->user()->hasPermission('menu.manage'), 403);
-
-        ProductAddonOption::query()
-            ->whereHas('group', fn ($query) => $query->where('product_id', $this->product?->id))
-            ->findOrFail($optionId)
-            ->delete();
-
-        session()->flash('success', 'Add-on option deleted.');
-    }
-
-    public function cancelAddonOptionForm(): void
-    {
-        $this->resetAddonOptionForm();
-    }
-
-    private function resetAddonGroupForm(): void
-    {
-        $this->editingAddonGroupId = null;
-        $this->addonGroupName = '';
-        $this->addonGroupSelectionType = 'single';
-        $this->addonGroupIsRequired = false;
-        $this->addonGroupMaxSelections = null;
-    }
-
-    private function resetAddonOptionForm(): void
-    {
-        $this->editingAddonOptionId = null;
-        $this->addonOptionGroupId = null;
-        $this->addonOptionName = '';
-        $this->addonOptionPrice = '0';
-        $this->addonOptionIsAvailable = true;
+        $this->editingAddonId = null;
+        $this->addonName = '';
+        $this->addonPrice = '0';
+        $this->addonIsAvailable = true;
     }
 
     public function requestAiImage(): void
@@ -650,8 +542,8 @@ class ProductForm extends Component
             'variants' => $this->product?->exists
                 ? $this->product->variants()->orderBy('sort_order')->orderBy('name')->get()
                 : collect(),
-            'addonGroups' => $this->product?->exists
-                ? $this->product->addonGroups()->with('options')->get()
+            'addons' => $this->product?->exists
+                ? $this->product->addons()->orderBy('sort_order')->orderBy('name')->get()
                 : collect(),
         ]);
     }

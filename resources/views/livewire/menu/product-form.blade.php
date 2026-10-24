@@ -162,123 +162,59 @@
 
         @if ($this->fieldEnabled('addons') && $product?->exists)
             <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                <h3 class="text-sm font-semibold text-slate-900">Add-ons &amp; extras</h3>
-                <p class="mt-1 text-xs text-slate-500">Optional paid extras (e.g. extra cheese +₹20) or choices (e.g. hazelnut flavour +₹20).</p>
+                <h3 class="text-sm font-semibold text-slate-900">Customizations</h3>
+                <p class="mt-1 text-xs text-slate-500">One list per item — e.g. Iced, Extra cheese (+₹20), Hazelnut (+₹20). Staff pick any combination at POS.</p>
 
-                @if ($addonGroups->isNotEmpty())
-                    <div class="mt-4 space-y-4">
-                        @foreach ($addonGroups as $group)
-                            <div wire:key="addon-group-{{ $group->id }}" class="rounded-lg border border-slate-200 bg-white p-3">
-                                <div class="flex items-start justify-between gap-2">
-                                    <div>
-                                        <p class="font-semibold text-slate-900">{{ $group->name }}</p>
-                                        <p class="text-xs text-slate-500">
-                                            {{ $group->selection_type->label() }}
-                                            @if ($group->is_required) · Required @endif
-                                            @if ($group->max_selections) · Max {{ $group->max_selections }} @endif
-                                        </p>
-                                    </div>
-                                    <div class="flex shrink-0 gap-2 text-sm">
-                                        <button wire:click="editAddonGroup({{ $group->id }})" type="button" class="text-amber-600 hover:text-amber-700">Edit</button>
-                                        <button wire:click="deleteAddonGroup({{ $group->id }})" wire:confirm="Delete this add-on group and its options?" type="button" class="text-red-600 hover:text-red-700">Delete</button>
-                                    </div>
+                @if ($addons->isNotEmpty())
+                    <ul class="mt-4 space-y-2">
+                        @foreach ($addons as $addon)
+                            <li wire:key="addon-{{ $addon->id }}" class="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
+                                <span class="text-slate-800">
+                                    <span class="font-semibold">{{ $addon->name }}</span>
+                                    @if ((float) $addon->price > 0)
+                                        <span class="ml-2 text-amber-600">+₹{{ number_format((float) $addon->price, 0) }}</span>
+                                    @else
+                                        <span class="ml-2 text-xs text-slate-400">No extra charge</span>
+                                    @endif
+                                    @if (! $addon->is_available)
+                                        <span class="ml-2 text-xs text-slate-400">(hidden at POS)</span>
+                                    @endif
+                                </span>
+                                <div class="flex gap-2">
+                                    <button wire:click="editAddon({{ $addon->id }})" type="button" class="text-amber-600 hover:text-amber-700">Edit</button>
+                                    <button wire:click="deleteAddon({{ $addon->id }})" wire:confirm="Remove this customization?" type="button" class="text-red-600 hover:text-red-700">Delete</button>
                                 </div>
-                                @if ($group->options->isNotEmpty())
-                                    <ul class="mt-2 space-y-1">
-                                        @foreach ($group->options as $option)
-                                            <li wire:key="addon-opt-{{ $option->id }}" class="flex items-center justify-between rounded-md bg-slate-50 px-2 py-1.5 text-sm">
-                                                <span class="text-slate-800">
-                                                    {{ $option->name }}
-                                                    @if ((float) $option->price > 0)
-                                                        <span class="text-amber-600">+₹{{ number_format((float) $option->price, 0) }}</span>
-                                                    @endif
-                                                    @if (! $option->is_available)
-                                                        <span class="text-xs text-slate-400">(unavailable)</span>
-                                                    @endif
-                                                </span>
-                                                <div class="flex gap-2">
-                                                    <button wire:click="editAddonOption({{ $option->id }})" type="button" class="text-amber-600 hover:text-amber-700">Edit</button>
-                                                    <button wire:click="deleteAddonOption({{ $option->id }})" wire:confirm="Delete this option?" type="button" class="text-red-600 hover:text-red-700">Delete</button>
-                                                </div>
-                                            </li>
-                                        @endforeach
-                                    </ul>
-                                @endif
-                            </div>
+                            </li>
                         @endforeach
-                    </div>
+                    </ul>
                 @endif
 
                 <div class="mt-4 rounded-lg border border-dashed border-slate-300 bg-white p-3">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Add-on group</p>
+                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ $editingAddonId ? 'Edit' : 'Add' }} customization</p>
                     <div class="mt-3 grid gap-3 sm:grid-cols-2">
                         <div class="sm:col-span-2">
-                            <label class="mb-1 block text-xs font-medium text-slate-600">Group name</label>
-                            <input wire:model="addonGroupName" type="text" placeholder="e.g. Extra toppings, Flavour" class="w-full rounded-lg border-slate-300 text-sm">
+                            <label class="mb-1 block text-xs font-medium text-slate-600">Name</label>
+                            <input wire:model="addonName" type="text" placeholder="e.g. Iced, Extra cheese, Vanilla" class="w-full rounded-lg border-slate-300 text-sm">
                         </div>
                         <div>
-                            <label class="mb-1 block text-xs font-medium text-slate-600">Selection</label>
-                            <select wire:model.live="addonGroupSelectionType" class="w-full rounded-lg border-slate-300 text-sm">
-                                <option value="single">Choose one</option>
-                                <option value="multiple">Choose multiple</option>
-                            </select>
+                            <label class="mb-1 block text-xs font-medium text-slate-600">Extra price (₹)</label>
+                            <input wire:model="addonPrice" type="number" step="0.01" min="0" class="w-full rounded-lg border-slate-300 text-sm">
                         </div>
-                        @if ($addonGroupSelectionType === 'multiple')
-                            <div>
-                                <label class="mb-1 block text-xs font-medium text-slate-600">Max selections</label>
-                                <input wire:model="addonGroupMaxSelections" type="number" min="1" max="20" placeholder="No limit" class="w-full rounded-lg border-slate-300 text-sm">
-                            </div>
-                        @endif
                     </div>
                     <label class="mt-3 flex items-center gap-2 text-sm text-slate-700">
-                        <input wire:model="addonGroupIsRequired" type="checkbox" class="rounded border-slate-300 text-amber-600">
-                        Customer must pick an option
+                        <input wire:model="addonIsAvailable" type="checkbox" class="rounded border-slate-300 text-amber-600">
+                        Show at POS
                     </label>
                     <div class="mt-3 flex gap-2">
-                        <button wire:click="saveAddonGroup" type="button" class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-900">{{ $editingAddonGroupId ? 'Update Group' : 'Add Group' }}</button>
-                        @if ($editingAddonGroupId)
-                            <button wire:click="cancelAddonGroupForm" type="button" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">Cancel</button>
+                        <button wire:click="saveAddon" type="button" class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-900">{{ $editingAddonId ? 'Update' : 'Add' }}</button>
+                        @if ($editingAddonId)
+                            <button wire:click="cancelAddonForm" type="button" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">Cancel</button>
                         @endif
                     </div>
                 </div>
-
-                @if ($addonGroups->isNotEmpty())
-                    <div class="mt-4 rounded-lg border border-dashed border-slate-300 bg-white p-3">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Add-on option</p>
-                        <div class="mt-3 grid gap-3 sm:grid-cols-2">
-                            <div class="sm:col-span-2">
-                                <label class="mb-1 block text-xs font-medium text-slate-600">Group</label>
-                                <select wire:model="addonOptionGroupId" class="w-full rounded-lg border-slate-300 text-sm">
-                                    <option value="">Select group</option>
-                                    @foreach ($addonGroups as $group)
-                                        <option value="{{ $group->id }}">{{ $group->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div>
-                                <label class="mb-1 block text-xs font-medium text-slate-600">Option name</label>
-                                <input wire:model="addonOptionName" type="text" placeholder="e.g. Extra cheese, Hazelnut" class="w-full rounded-lg border-slate-300 text-sm">
-                            </div>
-                            <div>
-                                <label class="mb-1 block text-xs font-medium text-slate-600">Extra price (₹)</label>
-                                <input wire:model="addonOptionPrice" type="number" step="0.01" min="0" class="w-full rounded-lg border-slate-300 text-sm">
-                            </div>
-                        </div>
-                        <label class="mt-3 flex items-center gap-2 text-sm text-slate-700">
-                            <input wire:model="addonOptionIsAvailable" type="checkbox" class="rounded border-slate-300 text-amber-600">
-                            Available at POS
-                        </label>
-                        <div class="mt-3 flex gap-2">
-                            <button wire:click="saveAddonOption" type="button" class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-900">{{ $editingAddonOptionId ? 'Update Option' : 'Add Option' }}</button>
-                            @if ($editingAddonOptionId)
-                                <button wire:click="cancelAddonOptionForm" type="button" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">Cancel</button>
-                            @endif
-                        </div>
-                    </div>
-                @endif
             </div>
         @elseif ($this->fieldEnabled('addons') && ! $product?->exists)
-            <p class="rounded-lg border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-800">Save the product first, then you can add paid add-ons and flavour choices.</p>
+            <p class="rounded-lg border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-800">Save the product first, then add customizations like Iced or Extra cheese.</p>
         @endif
 
         @if ($this->fieldEnabled('image'))

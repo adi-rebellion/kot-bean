@@ -15,7 +15,7 @@ class MenuProductFields
             'preparation_time' => 'Prep time',
             'inventory' => 'Inventory tracking & stock',
             'variants' => 'Size / variants',
-            'addons' => 'Add-ons & extras',
+            'addons' => 'Customizations (e.g. Iced, Extra cheese)',
             'sort_order' => 'Sort order',
             'image' => 'Product photo & AI image',
         ];

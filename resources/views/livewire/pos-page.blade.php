@@ -217,8 +217,8 @@
                                     @if ($item->modifiers)
                                         <ul class="mt-0.5 space-y-0.5 text-xs text-slate-500">
                                             @foreach ($item->modifiers as $modifier)
-                                                <li wire:key="mod-{{ $item->id }}-{{ $modifier['option_id'] ?? loop->index }}">
-                                                    + {{ $modifier['option_name'] ?? '' }}
+                                                <li wire:key="mod-{{ $item->id }}-{{ $modifier['addon_id'] ?? $modifier['option_id'] ?? loop->index }}">
+                                                    + {{ $modifier['name'] ?? $modifier['option_name'] ?? '' }}
                                                     @if ((float) ($modifier['price'] ?? 0) > 0)
                                                         (₹{{ number_format((float) $modifier['price'], 0) }})
                                                     @endif
@@ -359,9 +359,7 @@
 
                 @php
                     $customizeVariants = $customizeProduct->variants->where('is_available', true);
-                    $customizeAddonGroups = $customizeProduct->addonGroups->filter(
-                        fn ($group) => $group->options->where('is_available', true)->isNotEmpty()
-                    );
+                    $customizeAddons = $customizeProduct->addons->where('is_available', true);
                 @endphp
 
                 @if ($customizeProduct->has_variants && $customizeVariants->isNotEmpty())
@@ -385,37 +383,31 @@
                     </div>
                 @endif
 
-                @foreach ($customizeAddonGroups as $group)
-                    @php $availableOptions = $group->options->where('is_available', true); @endphp
-                    <div wire:key="pos-addon-group-{{ $group->id }}" class="mt-4">
-                        <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
-                            {{ $group->name }}
-                            @if ($group->is_required)<span class="text-red-500">*</span>@endif
-                        </p>
-                        <div class="space-y-2">
-                            @foreach ($availableOptions as $option)
-                                @php $selected = in_array($option->id, $selectedAddonOptionIds, true); @endphp
-                                <button
-                                    wire:key="addon-{{ $option->id }}"
-                                    wire:click="toggleAddonOption({{ $group->id }}, {{ $option->id }})"
-                                    type="button"
-                                    @class([
-                                        'flex w-full items-center justify-between rounded-xl border-2 px-4 py-3 text-left transition',
-                                        'border-amber-500 bg-amber-50' => $selected,
-                                        'border-slate-200 hover:border-slate-300' => ! $selected,
-                                    ])
-                                >
-                                    <span class="font-medium text-slate-900">{{ $option->name }}</span>
-                                    @if ((float) $option->price > 0)
-                                        <span class="text-sm font-bold text-amber-600">+₹{{ number_format((float) $option->price, 0) }}</span>
-                                    @else
-                                        <span class="text-xs text-slate-400">Included</span>
-                                    @endif
-                                </button>
-                            @endforeach
-                        </div>
+                @if ($customizeAddons->isNotEmpty())
+                    <p class="mb-2 mt-4 text-xs font-semibold uppercase tracking-wider text-slate-400">Customizations</p>
+                    <div class="space-y-2">
+                        @foreach ($customizeAddons as $addon)
+                            @php $selected = in_array($addon->id, $selectedAddonIds, true); @endphp
+                            <button
+                                wire:key="pos-addon-{{ $addon->id }}"
+                                wire:click="toggleAddon({{ $addon->id }})"
+                                type="button"
+                                @class([
+                                    'flex w-full items-center justify-between rounded-xl border-2 px-4 py-3 text-left transition',
+                                    'border-amber-500 bg-amber-50' => $selected,
+                                    'border-slate-200 hover:border-slate-300' => ! $selected,
+                                ])
+                            >
+                                <span class="font-medium text-slate-900">{{ $addon->name }}</span>
+                                @if ((float) $addon->price > 0)
+                                    <span class="text-sm font-bold text-amber-600">+₹{{ number_format((float) $addon->price, 0) }}</span>
+                                @else
+                                    <span class="text-xs text-slate-400">Included</span>
+                                @endif
+                            </button>
+                        @endforeach
                     </div>
-                @endforeach
+                @endif
 
                 <div class="mt-5 grid grid-cols-2 gap-2">
                     <button wire:click="cancelCustomize" type="button" class="rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-600">Cancel</button>
