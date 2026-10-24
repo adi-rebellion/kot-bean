@@ -11,7 +11,10 @@ use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\ProductAddonGroup;
+use App\Models\ProductAddonOption;
 use App\Models\ProductVariant;
+use App\Support\OrderItemModifiers;
 use App\Models\RestaurantTable;
 use App\Services\CustomerService;
 use App\Services\OrderService;
@@ -19,7 +22,6 @@ use App\Services\PaymentService;
 use App\Services\PromotionService;
 use App\Services\TableService;
 use Illuminate\Contracts\View\View;
-use Illuminate\Support\Collection;
 use InvalidArgumentException;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -41,7 +43,7 @@ class PosPage extends Component
 
     public bool $showPaymentModal = false;
 
-    public bool $showVariantModal = false;
+    public bool $showCustomizeModal = false;
 
     public string $paymentMethod = 'cash';
 
@@ -49,9 +51,12 @@ class PosPage extends Component
 
     public ?string $paymentReference = null;
 
-    public ?int $variantProductId = null;
+    public ?int $customizeProductId = null;
 
     public ?int $selectedVariantId = null;
+
+    /** @var array<int, int> */
+    public array $selectedAddonOptionIds = [];
 
     public string $errorMessage = '';
 
@@ -68,9 +73,6 @@ class PosPage extends Component
     public string $orderNotes = '';
 
     public string $promoCode = '';
-
-    /** @var Collection<int, Product> */
-    public Collection $variantOptions;
 
     protected OrderService $orderService;
 
@@ -90,8 +92,6 @@ class PosPage extends Component
 
     public function mount(?int $order = null): void
     {
-        $this->variantOptions = collect();
-
         if ($order) {
             $existing = Order::with('items')->find($order);
 
@@ -219,7 +219,7 @@ class PosPage extends Component
 
     public function addProduct(int $productId): void
     {
-        $product = Product::with('variants')->findOrFail($productId);
+        $product = Product::with(['variants', 'addonGroups.options'])->findOrFail($productId);
 
         if (! $product->isOrderable()) {
             $this->errorMessage = "{$product->name} is out of stock or unavailable.";
@@ -227,37 +227,141 @@ class PosPage extends Component
             return;
         }
 
-        if ($product->has_variants && $product->variants->where('is_available', true)->isNotEmpty()) {
-            $this->variantProductId = $productId;
-            $this->variantOptions = $product->variants->where('is_available', true)->values();
-            $this->selectedVariantId = $product->variants->firstWhere('is_default', true)?->id
-                ?? $this->variantOptions->first()?->id;
-            $this->showVariantModal = true;
+        $availableVariants = $product->variants->where('is_available', true);
+        $addonGroups = $product->addonGroups->filter(
+            fn (ProductAddonGroup $group) => $group->options->where('is_available', true)->isNotEmpty()
+        );
+
+        $needsVariant = $product->has_variants && $availableVariants->isNotEmpty();
+        $needsAddons = $addonGroups->isNotEmpty();
+
+        if ($needsVariant || $needsAddons) {
+            $this->customizeProductId = $productId;
+            $this->selectedVariantId = $needsVariant
+                ? ($product->variants->firstWhere('is_default', true)?->id ?? $availableVariants->first()?->id)
+                : null;
+            $this->selectedAddonOptionIds = [];
+            $this->showCustomizeModal = true;
 
             return;
         }
 
-        $this->addProductToCart($productId, null);
+        $this->addProductToCart($productId, null, []);
     }
 
-    public function confirmVariant(): void
+    public function toggleAddonOption(int $groupId, int $optionId): void
     {
-        if ($this->variantProductId && $this->selectedVariantId) {
-            $this->addProductToCart($this->variantProductId, $this->selectedVariantId);
+        $group = ProductAddonGroup::with('options')->findOrFail($groupId);
+        $groupOptionIds = $group->options->pluck('id');
+
+        if ($group->selection_type->value === 'single') {
+            $this->selectedAddonOptionIds = collect($this->selectedAddonOptionIds)
+                ->reject(fn (int $id) => $groupOptionIds->contains($id))
+                ->push($optionId)
+                ->values()
+                ->all();
+
+            return;
         }
 
-        $this->showVariantModal = false;
-        $this->variantProductId = null;
-        $this->selectedVariantId = null;
-        $this->variantOptions = collect();
+        if (in_array($optionId, $this->selectedAddonOptionIds, true)) {
+            $this->selectedAddonOptionIds = array_values(array_diff($this->selectedAddonOptionIds, [$optionId]));
+
+            return;
+        }
+
+        if ($group->max_selections !== null) {
+            $selectedInGroup = collect($this->selectedAddonOptionIds)
+                ->filter(fn (int $id) => $groupOptionIds->contains($id))
+                ->count();
+
+            if ($selectedInGroup >= $group->max_selections) {
+                $this->errorMessage = "You can pick at most {$group->max_selections} for {$group->name}.";
+
+                return;
+            }
+        }
+
+        $this->selectedAddonOptionIds[] = $optionId;
+        $this->errorMessage = '';
     }
 
-    public function cancelVariant(): void
+    public function confirmCustomize(): void
     {
-        $this->showVariantModal = false;
-        $this->variantProductId = null;
+        if (! $this->customizeProductId) {
+            return;
+        }
+
+        $product = Product::with(['variants', 'addonGroups.options'])->findOrFail($this->customizeProductId);
+        $availableVariants = $product->variants->where('is_available', true);
+
+        if ($product->has_variants && $availableVariants->isNotEmpty() && ! $this->selectedVariantId) {
+            $this->errorMessage = 'Choose a variant.';
+
+            return;
+        }
+
+        foreach ($product->addonGroups as $group) {
+            $availableOptions = $group->options->where('is_available', true);
+
+            if ($availableOptions->isEmpty()) {
+                continue;
+            }
+
+            $selectedInGroup = $availableOptions
+                ->whereIn('id', $this->selectedAddonOptionIds)
+                ->count();
+
+            if ($group->is_required && $selectedInGroup === 0) {
+                $this->errorMessage = "Please choose an option for {$group->name}.";
+
+                return;
+            }
+        }
+
+        $modifiers = $this->buildSelectedModifiers($product);
+        $variantId = $product->has_variants ? $this->selectedVariantId : null;
+
+        $this->addProductToCart($this->customizeProductId, $variantId, $modifiers);
+        $this->closeCustomizeModal();
+    }
+
+    public function cancelCustomize(): void
+    {
+        $this->closeCustomizeModal();
+    }
+
+    private function closeCustomizeModal(): void
+    {
+        $this->showCustomizeModal = false;
+        $this->customizeProductId = null;
         $this->selectedVariantId = null;
-        $this->variantOptions = collect();
+        $this->selectedAddonOptionIds = [];
+    }
+
+    /**
+     * @return array<int, array{group_id: int, group_name: string, option_id: int, option_name: string, price: float}>
+     */
+    private function buildSelectedModifiers(Product $product): array
+    {
+        if ($this->selectedAddonOptionIds === []) {
+            return [];
+        }
+
+        $options = ProductAddonOption::query()
+            ->with('group')
+            ->whereIn('id', $this->selectedAddonOptionIds)
+            ->where('is_available', true)
+            ->get()
+            ->filter(fn (ProductAddonOption $option) => $option->group->product_id === $product->id);
+
+        return $options->map(fn (ProductAddonOption $option) => [
+            'group_id' => $option->group->id,
+            'group_name' => $option->group->name,
+            'option_id' => $option->id,
+            'option_name' => $option->name,
+            'price' => (float) $option->price,
+        ])->values()->all();
     }
 
     public function incrementItem(int $itemId): void
@@ -412,7 +516,7 @@ class PosPage extends Component
         $this->promoCode = '';
         $this->errorMessage = '';
         $this->showPaymentModal = false;
-        $this->showVariantModal = false;
+        $this->showCustomizeModal = false;
     }
 
     public function render(): View
@@ -425,7 +529,7 @@ class PosPage extends Component
             ->get();
 
         $productsQuery = Product::query()
-            ->with(['category', 'variants'])
+            ->with(['category', 'variants', 'addonGroups.options'])
             ->where('is_available', true)
             ->orderBy('sort_order');
 
@@ -447,32 +551,43 @@ class PosPage extends Component
             : collect();
         $order = $this->getCurrentOrder();
 
+        $customizeProduct = $this->customizeProductId
+            ? Product::with(['variants', 'addonGroups.options'])->find($this->customizeProductId)
+            : null;
+
         return view('livewire.pos-page', [
             'categories' => $categories,
             'products' => $products,
             'tables' => $tables,
             'tablesEnabled' => $tablesEnabled,
             'order' => $order,
+            'customizeProduct' => $customizeProduct,
         ]);
     }
 
-    private function addProductToCart(int $productId, ?int $variantId): void
+    /**
+     * @param  array<int, array{group_id: int, group_name: string, option_id: int, option_name: string, price: float}>  $modifiers
+     */
+    private function addProductToCart(int $productId, ?int $variantId, array $modifiers): void
     {
         try {
             $order = $this->getOrCreateOrder();
             $product = Product::findOrFail($productId);
             $variant = $variantId ? ProductVariant::findOrFail($variantId) : null;
+            $fingerprint = OrderItemModifiers::fingerprint($modifiers);
 
             $existing = $order->items()
                 ->where('product_id', $productId)
                 ->when($variantId, fn ($q) => $q->where('product_variant_id', $variantId))
                 ->when(! $variantId, fn ($q) => $q->whereNull('product_variant_id'))
+                ->when($fingerprint, fn ($q) => $q->where('modifiers_fingerprint', $fingerprint))
+                ->when(! $fingerprint, fn ($q) => $q->whereNull('modifiers_fingerprint'))
                 ->first();
 
             if ($existing) {
                 $this->orderService->updateItemQuantity($existing, $existing->quantity + 1);
             } else {
-                $this->orderService->addItem($order, $product, 1, $variant);
+                $this->orderService->addItem($order, $product, 1, $variant, null, $modifiers);
             }
 
             $this->errorMessage = '';

@@ -64,6 +64,18 @@ class Product extends Model
         return $this->hasMany(ProductVariant::class);
     }
 
+    public function addonGroups(): HasMany
+    {
+        return $this->hasMany(ProductAddonGroup::class)->orderBy('sort_order')->orderBy('name');
+    }
+
+    public function hasConfiguredAddons(): bool
+    {
+        return $this->addonGroups()
+            ->whereHas('options', fn ($query) => $query->where('is_available', true))
+            ->exists();
+    }
+
     public function inventoryTransactions(): HasMany
     {
         return $this->hasMany(InventoryTransaction::class);

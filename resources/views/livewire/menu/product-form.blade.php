@@ -10,6 +10,9 @@
     @if (session('success'))
         <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{{ session('success') }}</div>
     @endif
+    @if (session('error'))
+        <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ session('error') }}</div>
+    @endif
 
     <form wire:submit="save" class="space-y-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
         <div class="grid gap-4 sm:grid-cols-2">
@@ -27,32 +30,42 @@
                     @endforeach
                 </select>
             </div>
-            <div>
-                <label class="mb-1 block text-sm font-medium text-slate-700">SKU</label>
-                <input wire:model="sku" type="text" class="w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
-            </div>
-            <div class="sm:col-span-2">
-                <label class="mb-1 block text-sm font-medium text-slate-700">Description</label>
-                <textarea wire:model="description" rows="3" class="w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500"></textarea>
-            </div>
+            @if ($this->fieldEnabled('sku'))
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">SKU</label>
+                    <input wire:model="sku" type="text" class="w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
+                </div>
+            @endif
+            @if ($this->fieldEnabled('description'))
+                <div class="sm:col-span-2">
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Description</label>
+                    <textarea wire:model="description" rows="3" class="w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500"></textarea>
+                </div>
+            @endif
             <div>
                 <label class="mb-1 block text-sm font-medium text-slate-700">Price (₹)</label>
                 <input wire:model="price" type="number" step="0.01" min="0" class="w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
                 @error('price') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
             </div>
-            <div>
-                <label class="mb-1 block text-sm font-medium text-slate-700">Cost Price (₹)</label>
-                <input wire:model="cost_price" type="number" step="0.01" min="0" class="w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
-            </div>
-            <div>
-                <label class="mb-1 block text-sm font-medium text-slate-700">Tax Rate (%)</label>
-                <input wire:model="tax_rate" type="number" step="0.01" min="0" max="100" class="w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
-            </div>
-            <div>
-                <label class="mb-1 block text-sm font-medium text-slate-700">Prep Time (min)</label>
-                <input wire:model="preparation_time" type="number" min="0" class="w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
-            </div>
-            @if ($track_inventory)
+            @if ($this->fieldEnabled('cost_price'))
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Cost Price (₹)</label>
+                    <input wire:model="cost_price" type="number" step="0.01" min="0" class="w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
+                </div>
+            @endif
+            @if ($this->fieldEnabled('tax_rate'))
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Tax Rate (%)</label>
+                    <input wire:model="tax_rate" type="number" step="0.01" min="0" max="100" class="w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
+                </div>
+            @endif
+            @if ($this->fieldEnabled('preparation_time'))
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Prep Time (min)</label>
+                    <input wire:model="preparation_time" type="number" min="0" class="w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
+                </div>
+            @endif
+            @if ($this->fieldEnabled('inventory') && $track_inventory)
                 <div>
                     <label class="mb-1 block text-sm font-medium text-slate-700">Stock</label>
                     <input wire:model="stock" type="number" min="0" class="w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
@@ -62,28 +75,34 @@
                     <input wire:model="min_stock" type="number" min="0" class="w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
                 </div>
             @endif
-            <div>
-                <label class="mb-1 block text-sm font-medium text-slate-700">Sort Order</label>
-                <input wire:model="sort_order" type="number" min="0" class="w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
-            </div>
+            @if ($this->fieldEnabled('sort_order'))
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Sort Order</label>
+                    <input wire:model="sort_order" type="number" min="0" class="w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
+                </div>
+            @endif
         </div>
 
         <div class="flex flex-wrap gap-4">
-            <label class="flex items-center gap-2 text-sm text-slate-700">
-                <input wire:model="track_inventory" type="checkbox" class="rounded border-slate-300 text-amber-600 focus:ring-amber-500">
-                Track inventory
-            </label>
-            <label class="flex items-center gap-2 text-sm text-slate-700">
-                <input wire:model="has_variants" type="checkbox" class="rounded border-slate-300 text-amber-600 focus:ring-amber-500">
-                Has variants
-            </label>
+            @if ($this->fieldEnabled('inventory'))
+                <label class="flex items-center gap-2 text-sm text-slate-700">
+                    <input wire:model="track_inventory" type="checkbox" class="rounded border-slate-300 text-amber-600 focus:ring-amber-500">
+                    Track inventory
+                </label>
+            @endif
+            @if ($this->fieldEnabled('variants'))
+                <label class="flex items-center gap-2 text-sm text-slate-700">
+                    <input wire:model="has_variants" type="checkbox" class="rounded border-slate-300 text-amber-600 focus:ring-amber-500">
+                    Has variants
+                </label>
+            @endif
             <label class="flex items-center gap-2 text-sm text-slate-700">
                 <input wire:model="is_available" type="checkbox" class="rounded border-slate-300 text-amber-600 focus:ring-amber-500">
                 Available for ordering
             </label>
         </div>
 
-        @if ($product?->exists && ($has_variants || $variants->isNotEmpty()))
+        @if ($this->fieldEnabled('variants') && $product?->exists && ($has_variants || $variants->isNotEmpty()))
             <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
                 <h3 class="text-sm font-semibold text-slate-900">Product Variants</h3>
                 @if ($variants->isNotEmpty())
@@ -141,54 +160,176 @@
             </div>
         @endif
 
-        {{-- Product Image --}}
-        <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <h3 class="text-sm font-semibold text-slate-900">Product Image</h3>
-            <p class="mt-1 text-xs text-slate-500">Upload a photo or generate one with AI.</p>
-            <div class="mt-3 flex flex-col items-start gap-4 sm:flex-row">
-                <div class="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-200 text-slate-400">
-                    @if ($image && $image->isPreviewable())
-                        <img src="{{ $image->temporaryUrl() }}" alt="Product preview" class="h-full w-full object-cover">
-                    @elseif (! $removeImage && $product?->image_url)
-                        <img src="{{ $product->image_url }}" alt="{{ $product->name }}" class="h-full w-full object-cover">
-                    @else
-                        <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16"/></svg>
-                    @endif
+        @if ($this->fieldEnabled('addons') && $product?->exists)
+            <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <h3 class="text-sm font-semibold text-slate-900">Add-ons &amp; extras</h3>
+                <p class="mt-1 text-xs text-slate-500">Optional paid extras (e.g. extra cheese +₹20) or choices (e.g. hazelnut flavour +₹20).</p>
+
+                @if ($addonGroups->isNotEmpty())
+                    <div class="mt-4 space-y-4">
+                        @foreach ($addonGroups as $group)
+                            <div wire:key="addon-group-{{ $group->id }}" class="rounded-lg border border-slate-200 bg-white p-3">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div>
+                                        <p class="font-semibold text-slate-900">{{ $group->name }}</p>
+                                        <p class="text-xs text-slate-500">
+                                            {{ $group->selection_type->label() }}
+                                            @if ($group->is_required) · Required @endif
+                                            @if ($group->max_selections) · Max {{ $group->max_selections }} @endif
+                                        </p>
+                                    </div>
+                                    <div class="flex shrink-0 gap-2 text-sm">
+                                        <button wire:click="editAddonGroup({{ $group->id }})" type="button" class="text-amber-600 hover:text-amber-700">Edit</button>
+                                        <button wire:click="deleteAddonGroup({{ $group->id }})" wire:confirm="Delete this add-on group and its options?" type="button" class="text-red-600 hover:text-red-700">Delete</button>
+                                    </div>
+                                </div>
+                                @if ($group->options->isNotEmpty())
+                                    <ul class="mt-2 space-y-1">
+                                        @foreach ($group->options as $option)
+                                            <li wire:key="addon-opt-{{ $option->id }}" class="flex items-center justify-between rounded-md bg-slate-50 px-2 py-1.5 text-sm">
+                                                <span class="text-slate-800">
+                                                    {{ $option->name }}
+                                                    @if ((float) $option->price > 0)
+                                                        <span class="text-amber-600">+₹{{ number_format((float) $option->price, 0) }}</span>
+                                                    @endif
+                                                    @if (! $option->is_available)
+                                                        <span class="text-xs text-slate-400">(unavailable)</span>
+                                                    @endif
+                                                </span>
+                                                <div class="flex gap-2">
+                                                    <button wire:click="editAddonOption({{ $option->id }})" type="button" class="text-amber-600 hover:text-amber-700">Edit</button>
+                                                    <button wire:click="deleteAddonOption({{ $option->id }})" wire:confirm="Delete this option?" type="button" class="text-red-600 hover:text-red-700">Delete</button>
+                                                </div>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+
+                <div class="mt-4 rounded-lg border border-dashed border-slate-300 bg-white p-3">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Add-on group</p>
+                    <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                        <div class="sm:col-span-2">
+                            <label class="mb-1 block text-xs font-medium text-slate-600">Group name</label>
+                            <input wire:model="addonGroupName" type="text" placeholder="e.g. Extra toppings, Flavour" class="w-full rounded-lg border-slate-300 text-sm">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-medium text-slate-600">Selection</label>
+                            <select wire:model.live="addonGroupSelectionType" class="w-full rounded-lg border-slate-300 text-sm">
+                                <option value="single">Choose one</option>
+                                <option value="multiple">Choose multiple</option>
+                            </select>
+                        </div>
+                        @if ($addonGroupSelectionType === 'multiple')
+                            <div>
+                                <label class="mb-1 block text-xs font-medium text-slate-600">Max selections</label>
+                                <input wire:model="addonGroupMaxSelections" type="number" min="1" max="20" placeholder="No limit" class="w-full rounded-lg border-slate-300 text-sm">
+                            </div>
+                        @endif
+                    </div>
+                    <label class="mt-3 flex items-center gap-2 text-sm text-slate-700">
+                        <input wire:model="addonGroupIsRequired" type="checkbox" class="rounded border-slate-300 text-amber-600">
+                        Customer must pick an option
+                    </label>
+                    <div class="mt-3 flex gap-2">
+                        <button wire:click="saveAddonGroup" type="button" class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-900">{{ $editingAddonGroupId ? 'Update Group' : 'Add Group' }}</button>
+                        @if ($editingAddonGroupId)
+                            <button wire:click="cancelAddonGroupForm" type="button" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">Cancel</button>
+                        @endif
+                    </div>
                 </div>
-                <div class="min-w-0 flex-1 space-y-2">
-                    <input
-                        wire:model="image"
-                        type="file"
-                        accept="image/png,image/jpeg,image/webp"
-                        class="block w-full text-sm text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-white file:px-3 file:py-2 file:text-sm file:font-semibold file:text-slate-700 hover:file:bg-slate-100"
-                    >
-                    <p class="text-xs text-slate-500">PNG, JPG or WebP. Max 8 MB.</p>
-                    @if ($image || (! $removeImage && $product?->image_url))
-                        <button wire:click.prevent="clearImage" type="button" class="text-xs font-medium text-red-600 hover:text-red-700">Remove image</button>
-                    @endif
-                    @error('image') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
-                    <div wire:loading wire:target="image" class="text-xs text-slate-500">Uploading preview…</div>
-                    <button
-                        wire:click="requestAiImage"
-                        wire:loading.attr="disabled"
-                        type="button"
-                        class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-900 disabled:opacity-50"
-                    >
-                        <span wire:loading.remove wire:target="requestAiImage">Generate with AI</span>
-                        <span wire:loading wire:target="requestAiImage">Requesting...</span>
-                    </button>
-                    @if ($generationMessage)
-                        <p @class([
-                            'mt-2 text-sm',
-                            'text-amber-600' => $generationPending,
-                            'text-emerald-600' => ! $generationPending && (str_contains(strtolower($generationMessage), 'applied') || str_contains(strtolower($generationMessage), 'generated')),
-                            'text-red-600' => ! $generationPending && ! str_contains(strtolower($generationMessage), 'applied') && ! str_contains(strtolower($generationMessage), 'generated') && ! str_contains(strtolower($generationMessage), 'enter at least'),
-                            'text-slate-600' => ! $generationPending && str_contains(strtolower($generationMessage), 'enter at least'),
-                        ])>{{ $generationMessage }}</p>
-                    @endif
+
+                @if ($addonGroups->isNotEmpty())
+                    <div class="mt-4 rounded-lg border border-dashed border-slate-300 bg-white p-3">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Add-on option</p>
+                        <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                            <div class="sm:col-span-2">
+                                <label class="mb-1 block text-xs font-medium text-slate-600">Group</label>
+                                <select wire:model="addonOptionGroupId" class="w-full rounded-lg border-slate-300 text-sm">
+                                    <option value="">Select group</option>
+                                    @foreach ($addonGroups as $group)
+                                        <option value="{{ $group->id }}">{{ $group->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label class="mb-1 block text-xs font-medium text-slate-600">Option name</label>
+                                <input wire:model="addonOptionName" type="text" placeholder="e.g. Extra cheese, Hazelnut" class="w-full rounded-lg border-slate-300 text-sm">
+                            </div>
+                            <div>
+                                <label class="mb-1 block text-xs font-medium text-slate-600">Extra price (₹)</label>
+                                <input wire:model="addonOptionPrice" type="number" step="0.01" min="0" class="w-full rounded-lg border-slate-300 text-sm">
+                            </div>
+                        </div>
+                        <label class="mt-3 flex items-center gap-2 text-sm text-slate-700">
+                            <input wire:model="addonOptionIsAvailable" type="checkbox" class="rounded border-slate-300 text-amber-600">
+                            Available at POS
+                        </label>
+                        <div class="mt-3 flex gap-2">
+                            <button wire:click="saveAddonOption" type="button" class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-900">{{ $editingAddonOptionId ? 'Update Option' : 'Add Option' }}</button>
+                            @if ($editingAddonOptionId)
+                                <button wire:click="cancelAddonOptionForm" type="button" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">Cancel</button>
+                            @endif
+                        </div>
+                    </div>
+                @endif
+            </div>
+        @elseif ($this->fieldEnabled('addons') && ! $product?->exists)
+            <p class="rounded-lg border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-800">Save the product first, then you can add paid add-ons and flavour choices.</p>
+        @endif
+
+        @if ($this->fieldEnabled('image'))
+            <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <h3 class="text-sm font-semibold text-slate-900">Product Image</h3>
+                <p class="mt-1 text-xs text-slate-500">Upload a photo or generate one with AI.</p>
+                <div class="mt-3 flex flex-col items-start gap-4 sm:flex-row">
+                    <div class="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-200 text-slate-400">
+                        @if ($image && $image->isPreviewable())
+                            <img src="{{ $image->temporaryUrl() }}" alt="Product preview" class="h-full w-full object-cover">
+                        @elseif (! $removeImage && $product?->image_url)
+                            <img src="{{ $product->image_url }}" alt="{{ $product->name }}" class="h-full w-full object-cover">
+                        @else
+                            <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16"/></svg>
+                        @endif
+                    </div>
+                    <div class="min-w-0 flex-1 space-y-2">
+                        <input
+                            wire:model="image"
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp"
+                            class="block w-full text-sm text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-white file:px-3 file:py-2 file:text-sm file:font-semibold file:text-slate-700 hover:file:bg-slate-100"
+                        >
+                        <p class="text-xs text-slate-500">PNG, JPG or WebP. Max 8 MB.</p>
+                        @if ($image || (! $removeImage && $product?->image_url))
+                            <button wire:click.prevent="clearImage" type="button" class="text-xs font-medium text-red-600 hover:text-red-700">Remove image</button>
+                        @endif
+                        @error('image') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
+                        <div wire:loading wire:target="image" class="text-xs text-slate-500">Uploading preview…</div>
+                        <button
+                            wire:click="requestAiImage"
+                            wire:loading.attr="disabled"
+                            type="button"
+                            class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-900 disabled:opacity-50"
+                        >
+                            <span wire:loading.remove wire:target="requestAiImage">Generate with AI</span>
+                            <span wire:loading wire:target="requestAiImage">Requesting...</span>
+                        </button>
+                        @if ($generationMessage)
+                            <p @class([
+                                'mt-2 text-sm',
+                                'text-amber-600' => $generationPending,
+                                'text-emerald-600' => ! $generationPending && (str_contains(strtolower($generationMessage), 'applied') || str_contains(strtolower($generationMessage), 'generated')),
+                                'text-red-600' => ! $generationPending && ! str_contains(strtolower($generationMessage), 'applied') && ! str_contains(strtolower($generationMessage), 'generated') && ! str_contains(strtolower($generationMessage), 'enter at least'),
+                                'text-slate-600' => ! $generationPending && str_contains(strtolower($generationMessage), 'enter at least'),
+                            ])>{{ $generationMessage }}</p>
+                        @endif
+                    </div>
                 </div>
             </div>
-        </div>
+        @endif
 
         <div class="flex justify-end gap-3 border-t border-slate-100 pt-4">
             <button type="submit" wire:loading.attr="disabled" class="rounded-lg bg-amber-500 px-6 py-2.5 text-sm font-bold text-white hover:bg-amber-600 disabled:opacity-50">

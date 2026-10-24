@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Support\MenuProductFields;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Layout;
@@ -45,6 +46,9 @@ class SettingsPage extends Component
 
     public bool $remove_logo = false;
 
+    /** @var array<string, bool> */
+    public array $menu_product_fields = [];
+
     /** @var array<string, string> */
     public array $themePresets = [
         'amber' => '#f59e0b',
@@ -76,6 +80,7 @@ class SettingsPage extends Component
             'loyalty_rupees_per_point' => (string) ($restaurant->settings['loyalty_rupees_per_point'] ?? 1),
             'theme_color' => $restaurant->themeColor(),
             'current_logo_url' => $restaurant->logoUrl(),
+            'menu_product_fields' => $restaurant->menuProductFields(),
         ]);
     }
 
@@ -124,6 +129,11 @@ class SettingsPage extends Component
         $settings['loyalty_points_per_100'] = (int) ($data['loyalty_points_per_100'] ?? 1);
         $settings['loyalty_rupees_per_point'] = (float) ($data['loyalty_rupees_per_point'] ?? 1);
         $settings['theme_color'] = $data['theme_color'];
+        $settings['menu_product_fields'] = collect(MenuProductFields::labels())
+            ->mapWithKeys(fn (string $label, string $key) => [
+                $key => (bool) ($this->menu_product_fields[$key] ?? true),
+            ])
+            ->all();
 
         $logoPath = $restaurant->logo_path;
 
@@ -161,6 +171,8 @@ class SettingsPage extends Component
 
     public function render(): View
     {
-        return view('livewire.settings-page');
+        return view('livewire.settings-page', [
+            'menuFieldLabels' => MenuProductFields::labels(),
+        ]);
     }
 }

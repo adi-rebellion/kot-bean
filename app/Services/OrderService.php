@@ -15,6 +15,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\RestaurantTable;
 use App\Models\User;
+use App\Support\OrderItemModifiers;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -57,6 +58,7 @@ class OrderService
         int $quantity,
         ?ProductVariant $variant = null,
         ?string $notes = null,
+        array $modifiers = [],
     ): OrderItem {
         $this->assertDraftOrder($order);
 
@@ -70,14 +72,20 @@ class OrderService
             throw new InsufficientStockException($product, $quantity, $available, $variant);
         }
 
-        return DB::transaction(function () use ($order, $product, $quantity, $variant, $notes) {
+        return DB::transaction(function () use ($order, $product, $quantity, $variant, $notes, $modifiers) {
             $order->loadMissing('restaurant');
 
-            $unitPrice = (float) ($variant?->price ?? $product->price);
+            $unitPrice = round(
+                (float) ($variant?->price ?? $product->price) + OrderItemModifiers::addonTotal($modifiers),
+                2,
+            );
             $taxRate = (float) ($product->tax_rate ?? $order->restaurant->default_tax_rate ?? 0);
             $lineSubtotal = round($unitPrice * $quantity, 2);
             $taxAmount = round($lineSubtotal * ($taxRate / 100), 2);
             $total = round($lineSubtotal + $taxAmount, 2);
+            $fingerprint = OrderItemModifiers::fingerprint($modifiers);
+            $modifierNotes = OrderItemModifiers::kitchenNotes($modifiers);
+            $combinedNotes = trim(collect([$notes, $modifierNotes])->filter()->implode("\n"));
 
             $item = OrderItem::create([
                 'order_id' => $order->id,
@@ -90,7 +98,9 @@ class OrderService
                 'tax_rate' => $taxRate,
                 'tax_amount' => $taxAmount,
                 'total' => $total,
-                'notes' => $notes,
+                'notes' => $combinedNotes !== '' ? $combinedNotes : null,
+                'modifiers' => $modifiers !== [] ? $modifiers : null,
+                'modifiers_fingerprint' => $fingerprint,
             ]);
 
             $this->recalculateTotals($order);

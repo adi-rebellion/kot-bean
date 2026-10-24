@@ -2,10 +2,13 @@
 
 namespace App\Livewire\Menu;
 
+use App\Enums\AddonSelectionType;
 use App\Enums\AiGenerationStatus;
 use App\Models\AiImageGeneration;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\ProductAddonGroup;
+use App\Models\ProductAddonOption;
 use App\Models\ProductVariant;
 use App\Services\AiImageService;
 use App\Services\ProductService;
@@ -76,6 +79,26 @@ class ProductForm extends Component
 
     public bool $removeImage = false;
 
+    public ?int $editingAddonGroupId = null;
+
+    public string $addonGroupName = '';
+
+    public string $addonGroupSelectionType = 'single';
+
+    public bool $addonGroupIsRequired = false;
+
+    public ?int $addonGroupMaxSelections = null;
+
+    public ?int $editingAddonOptionId = null;
+
+    public ?int $addonOptionGroupId = null;
+
+    public string $addonOptionName = '';
+
+    public string $addonOptionPrice = '0';
+
+    public bool $addonOptionIsAvailable = true;
+
     public function mount(?Product $product = null): void
     {
         $this->product = $product;
@@ -98,35 +121,122 @@ class ProductForm extends Component
                 'sort_order' => (int) $product->sort_order,
             ]);
         }
+
+        if (! $this->fieldEnabled('inventory')) {
+            $this->track_inventory = false;
+        }
+    }
+
+    public function fieldEnabled(string $field): bool
+    {
+        return auth()->user()->restaurant->menuProductFieldEnabled($field);
     }
 
     public function save(): void
     {
-        $data = $this->validate([
+        $rules = [
             'name' => 'required|string|max:255',
             'category_id' => 'nullable|exists:categories,id',
-            'description' => 'nullable|string',
-            'sku' => 'nullable|string|max:100',
             'price' => 'required|numeric|min:0',
-            'cost_price' => 'nullable|numeric|min:0',
-            'tax_rate' => 'nullable|numeric|min:0|max:100',
-            'stock' => 'integer|min:0',
-            'min_stock' => 'integer|min:0',
-            'preparation_time' => 'integer|min:0',
-            'has_variants' => 'boolean',
-            'track_inventory' => 'boolean',
             'is_available' => 'boolean',
-            'sort_order' => 'integer|min:0',
-            'image' => self::IMAGE_RULES,
-        ]);
+        ];
 
-        unset($data['image']);
+        if ($this->fieldEnabled('description')) {
+            $rules['description'] = 'nullable|string';
+        }
+
+        if ($this->fieldEnabled('sku')) {
+            $rules['sku'] = 'nullable|string|max:100';
+        }
+
+        if ($this->fieldEnabled('cost_price')) {
+            $rules['cost_price'] = 'nullable|numeric|min:0';
+        }
+
+        if ($this->fieldEnabled('tax_rate')) {
+            $rules['tax_rate'] = 'nullable|numeric|min:0|max:100';
+        }
+
+        if ($this->fieldEnabled('inventory') && $this->track_inventory) {
+            $rules['stock'] = 'integer|min:0';
+            $rules['min_stock'] = 'integer|min:0';
+        }
+
+        if ($this->fieldEnabled('preparation_time')) {
+            $rules['preparation_time'] = 'integer|min:0';
+        }
+
+        if ($this->fieldEnabled('variants')) {
+            $rules['has_variants'] = 'boolean';
+        }
+
+        if ($this->fieldEnabled('inventory')) {
+            $rules['track_inventory'] = 'boolean';
+        }
+
+        if ($this->fieldEnabled('sort_order')) {
+            $rules['sort_order'] = 'integer|min:0';
+        }
+
+        if ($this->fieldEnabled('image')) {
+            $rules['image'] = self::IMAGE_RULES;
+        }
+
+        $data = $this->validate($rules);
+
+        if ($this->fieldEnabled('image')) {
+            unset($data['image']);
+        }
 
         $data['category_id'] = $data['category_id'] ?: null;
-        $data['cost_price'] = $data['cost_price'] === '' || $data['cost_price'] === null ? 0 : $data['cost_price'];
-        $data['tax_rate'] = $data['tax_rate'] === '' ? null : $data['tax_rate'];
-        $data['description'] = $data['description'] === '' ? null : $data['description'];
-        $data['sku'] = $data['sku'] === '' ? null : $data['sku'];
+
+        if (! $this->fieldEnabled('description')) {
+            $data['description'] = $this->product?->description;
+        } else {
+            $data['description'] = ($data['description'] ?? '') === '' ? null : $data['description'];
+        }
+
+        if (! $this->fieldEnabled('sku')) {
+            $data['sku'] = $this->product?->sku;
+        } else {
+            $data['sku'] = ($data['sku'] ?? '') === '' ? null : $data['sku'];
+        }
+
+        if (! $this->fieldEnabled('cost_price')) {
+            $data['cost_price'] = $this->product?->cost_price ?? 0;
+        } else {
+            $data['cost_price'] = ($data['cost_price'] ?? '') === '' || ($data['cost_price'] ?? null) === null ? 0 : $data['cost_price'];
+        }
+
+        if (! $this->fieldEnabled('tax_rate')) {
+            $data['tax_rate'] = $this->product?->tax_rate;
+        } else {
+            $data['tax_rate'] = ($data['tax_rate'] ?? '') === '' ? null : $data['tax_rate'];
+        }
+
+        if (! $this->fieldEnabled('preparation_time')) {
+            $data['preparation_time'] = $this->product?->preparation_time ?? 15;
+        }
+
+        if (! $this->fieldEnabled('inventory')) {
+            $data['track_inventory'] = false;
+            $data['stock'] = $this->product?->stock ?? 0;
+            $data['min_stock'] = $this->product?->min_stock ?? 5;
+        } elseif (! ($data['track_inventory'] ?? $this->track_inventory)) {
+            $data['track_inventory'] = false;
+            $data['stock'] = $this->product?->stock ?? 0;
+            $data['min_stock'] = $this->product?->min_stock ?? 5;
+        }
+
+        if (! $this->fieldEnabled('variants')) {
+            $data['has_variants'] = $this->product?->has_variants ?? false;
+        }
+
+        if (! $this->fieldEnabled('sort_order')) {
+            $data['sort_order'] = $this->product?->sort_order ?? 0;
+        }
+
+        $data['is_available'] = $data['is_available'] ?? $this->is_available;
 
         $productService = app(ProductService::class);
 
@@ -138,7 +248,9 @@ class ProductForm extends Component
             session()->flash('success', 'Product created successfully.');
         }
 
-        $this->product = $this->persistImage($this->product);
+        if ($this->fieldEnabled('image')) {
+            $this->product = $this->persistImage($this->product);
+        }
     }
 
     public function updatedImage(): void
@@ -148,7 +260,7 @@ class ProductForm extends Component
             'image' => self::IMAGE_RULES,
         ]);
 
-        if ($this->image && $this->product?->exists) {
+        if ($this->fieldEnabled('image') && $this->image && $this->product?->exists) {
             $this->product = $this->persistImage($this->product);
             session()->flash('success', 'Product image uploaded.');
         }
@@ -263,6 +375,175 @@ class ProductForm extends Component
         $this->variantIsAvailable = true;
     }
 
+    public function editAddonGroup(int $groupId): void
+    {
+        abort_unless(auth()->user()->hasPermission('menu.manage'), 403);
+
+        $group = ProductAddonGroup::query()
+            ->where('product_id', $this->product?->id)
+            ->findOrFail($groupId);
+
+        $this->editingAddonGroupId = $group->id;
+        $this->addonGroupName = $group->name;
+        $this->addonGroupSelectionType = $group->selection_type->value;
+        $this->addonGroupIsRequired = $group->is_required;
+        $this->addonGroupMaxSelections = $group->max_selections;
+    }
+
+    public function saveAddonGroup(): void
+    {
+        abort_unless(auth()->user()->hasPermission('menu.manage'), 403);
+
+        if (! $this->product?->exists) {
+            session()->flash('error', 'Save the product before adding add-on groups.');
+
+            return;
+        }
+
+        $data = $this->validate([
+            'addonGroupName' => ['required', 'string', 'max:255'],
+            'addonGroupSelectionType' => ['required', 'in:single,multiple'],
+            'addonGroupIsRequired' => ['boolean'],
+            'addonGroupMaxSelections' => ['nullable', 'integer', 'min:1', 'max:20'],
+        ]);
+
+        $payload = [
+            'name' => $data['addonGroupName'],
+            'selection_type' => AddonSelectionType::from($data['addonGroupSelectionType']),
+            'is_required' => $data['addonGroupIsRequired'],
+            'max_selections' => $data['addonGroupSelectionType'] === 'multiple'
+                ? ($data['addonGroupMaxSelections'] ?? null)
+                : null,
+        ];
+
+        if ($this->editingAddonGroupId) {
+            ProductAddonGroup::query()
+                ->where('product_id', $this->product->id)
+                ->findOrFail($this->editingAddonGroupId)
+                ->update($payload);
+        } else {
+            ProductAddonGroup::create([
+                'product_id' => $this->product->id,
+                ...$payload,
+            ]);
+        }
+
+        $this->resetAddonGroupForm();
+        session()->flash('success', 'Add-on group saved.');
+    }
+
+    public function deleteAddonGroup(int $groupId): void
+    {
+        abort_unless(auth()->user()->hasPermission('menu.manage'), 403);
+
+        ProductAddonGroup::query()
+            ->where('product_id', $this->product?->id)
+            ->findOrFail($groupId)
+            ->delete();
+
+        session()->flash('success', 'Add-on group deleted.');
+    }
+
+    public function cancelAddonGroupForm(): void
+    {
+        $this->resetAddonGroupForm();
+    }
+
+    public function editAddonOption(int $optionId): void
+    {
+        abort_unless(auth()->user()->hasPermission('menu.manage'), 403);
+
+        $option = ProductAddonOption::query()
+            ->whereHas('group', fn ($query) => $query->where('product_id', $this->product?->id))
+            ->findOrFail($optionId);
+
+        $this->editingAddonOptionId = $option->id;
+        $this->addonOptionGroupId = $option->product_addon_group_id;
+        $this->addonOptionName = $option->name;
+        $this->addonOptionPrice = (string) $option->price;
+        $this->addonOptionIsAvailable = $option->is_available;
+    }
+
+    public function saveAddonOption(): void
+    {
+        abort_unless(auth()->user()->hasPermission('menu.manage'), 403);
+
+        if (! $this->product?->exists) {
+            session()->flash('error', 'Save the product before adding add-on options.');
+
+            return;
+        }
+
+        $data = $this->validate([
+            'addonOptionGroupId' => ['required', 'exists:product_addon_groups,id'],
+            'addonOptionName' => ['required', 'string', 'max:255'],
+            'addonOptionPrice' => ['required', 'numeric', 'min:0'],
+            'addonOptionIsAvailable' => ['boolean'],
+        ]);
+
+        abort_unless(
+            ProductAddonGroup::query()
+                ->where('product_id', $this->product->id)
+                ->whereKey($data['addonOptionGroupId'])
+                ->exists(),
+            403,
+        );
+
+        $payload = [
+            'product_addon_group_id' => $data['addonOptionGroupId'],
+            'name' => $data['addonOptionName'],
+            'price' => $data['addonOptionPrice'],
+            'is_available' => $data['addonOptionIsAvailable'],
+        ];
+
+        if ($this->editingAddonOptionId) {
+            ProductAddonOption::query()
+                ->whereHas('group', fn ($query) => $query->where('product_id', $this->product->id))
+                ->findOrFail($this->editingAddonOptionId)
+                ->update($payload);
+        } else {
+            ProductAddonOption::create($payload);
+        }
+
+        $this->resetAddonOptionForm();
+        session()->flash('success', 'Add-on option saved.');
+    }
+
+    public function deleteAddonOption(int $optionId): void
+    {
+        abort_unless(auth()->user()->hasPermission('menu.manage'), 403);
+
+        ProductAddonOption::query()
+            ->whereHas('group', fn ($query) => $query->where('product_id', $this->product?->id))
+            ->findOrFail($optionId)
+            ->delete();
+
+        session()->flash('success', 'Add-on option deleted.');
+    }
+
+    public function cancelAddonOptionForm(): void
+    {
+        $this->resetAddonOptionForm();
+    }
+
+    private function resetAddonGroupForm(): void
+    {
+        $this->editingAddonGroupId = null;
+        $this->addonGroupName = '';
+        $this->addonGroupSelectionType = 'single';
+        $this->addonGroupIsRequired = false;
+        $this->addonGroupMaxSelections = null;
+    }
+
+    private function resetAddonOptionForm(): void
+    {
+        $this->editingAddonOptionId = null;
+        $this->addonOptionGroupId = null;
+        $this->addonOptionName = '';
+        $this->addonOptionPrice = '0';
+        $this->addonOptionIsAvailable = true;
+    }
+
     public function requestAiImage(): void
     {
         if (! $this->ensureProductSaved()) {
@@ -368,6 +649,9 @@ class ProductForm extends Component
             'categories' => Category::query()->orderBy('sort_order')->get(),
             'variants' => $this->product?->exists
                 ? $this->product->variants()->orderBy('sort_order')->orderBy('name')->get()
+                : collect(),
+            'addonGroups' => $this->product?->exists
+                ? $this->product->addonGroups()->with('options')->get()
                 : collect(),
         ]);
     }

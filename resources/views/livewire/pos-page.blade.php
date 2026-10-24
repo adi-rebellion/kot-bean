@@ -208,7 +208,24 @@
                                     <button wire:click="incrementItem({{ $item->id }})" type="button" class="flex h-9 w-9 items-center justify-center text-lg font-medium text-slate-600 hover:bg-slate-50">+</button>
                                 </div>
                                 <div class="min-w-0 flex-1">
-                                    <p class="truncate text-sm font-semibold text-slate-900">{{ $item->product_name }}</p>
+                                    <p class="truncate text-sm font-semibold text-slate-900">
+                                        {{ $item->product_name }}
+                                        @if ($item->variant_name)
+                                            <span class="font-normal text-slate-500">· {{ $item->variant_name }}</span>
+                                        @endif
+                                    </p>
+                                    @if ($item->modifiers)
+                                        <ul class="mt-0.5 space-y-0.5 text-xs text-slate-500">
+                                            @foreach ($item->modifiers as $modifier)
+                                                <li wire:key="mod-{{ $item->id }}-{{ $modifier['option_id'] ?? loop->index }}">
+                                                    + {{ $modifier['option_name'] ?? '' }}
+                                                    @if ((float) ($modifier['price'] ?? 0) > 0)
+                                                        (₹{{ number_format((float) $modifier['price'], 0) }})
+                                                    @endif
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                    @endif
                                     <p class="text-xs text-slate-500">₹{{ number_format((float) $item->unit_price, 0) }} each</p>
                                 </div>
                                 <div class="text-right">
@@ -333,31 +350,76 @@
         </div>
     @endif
 
-    {{-- Variant modal --}}
-    @if ($showVariantModal)
-        <div class="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-4 sm:items-center" wire:click.self="cancelVariant">
-            <div class="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl">
-                <h3 class="text-lg font-bold text-slate-900">Choose size</h3>
-                <div class="mt-3 space-y-2">
-                    @foreach ($variantOptions as $variant)
-                        <button
-                            wire:key="var-{{ $variant->id }}"
-                            wire:click="selectVariant({{ $variant->id }})"
-                            type="button"
-                            @class([
-                                'flex w-full items-center justify-between rounded-xl border-2 px-4 py-3 text-left transition',
-                                'border-amber-500 bg-amber-50' => $selectedVariantId === $variant->id,
-                                'border-slate-200 hover:border-slate-300' => $selectedVariantId !== $variant->id,
-                            ])
-                        >
-                            <span class="font-semibold text-slate-900">{{ $variant->name }}</span>
-                            <span class="font-bold text-amber-600">₹{{ number_format((float) $variant->price, 0) }}</span>
-                        </button>
-                    @endforeach
-                </div>
-                <div class="mt-4 grid grid-cols-2 gap-2">
-                    <button wire:click="cancelVariant" type="button" class="rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-600">Cancel</button>
-                    <button wire:click="confirmVariant" type="button" class="rounded-xl bg-amber-500 py-3 text-sm font-bold text-white hover:bg-amber-600">Add</button>
+    {{-- Customize (variants + add-ons) --}}
+    @if ($showCustomizeModal && $customizeProduct)
+        <div class="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-4 sm:items-center" wire:click.self="cancelCustomize">
+            <div class="max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl">
+                <h3 class="text-lg font-bold text-slate-900">{{ $customizeProduct->name }}</h3>
+                <p class="text-sm text-slate-500">Customize before adding to cart</p>
+
+                @php
+                    $customizeVariants = $customizeProduct->variants->where('is_available', true);
+                    $customizeAddonGroups = $customizeProduct->addonGroups->filter(
+                        fn ($group) => $group->options->where('is_available', true)->isNotEmpty()
+                    );
+                @endphp
+
+                @if ($customizeProduct->has_variants && $customizeVariants->isNotEmpty())
+                    <p class="mb-2 mt-4 text-xs font-semibold uppercase tracking-wider text-slate-400">Size / variant</p>
+                    <div class="space-y-2">
+                        @foreach ($customizeVariants as $variant)
+                            <button
+                                wire:key="var-{{ $variant->id }}"
+                                wire:click="selectVariant({{ $variant->id }})"
+                                type="button"
+                                @class([
+                                    'flex w-full items-center justify-between rounded-xl border-2 px-4 py-3 text-left transition',
+                                    'border-amber-500 bg-amber-50' => $selectedVariantId === $variant->id,
+                                    'border-slate-200 hover:border-slate-300' => $selectedVariantId !== $variant->id,
+                                ])
+                            >
+                                <span class="font-semibold text-slate-900">{{ $variant->name }}</span>
+                                <span class="font-bold text-amber-600">₹{{ number_format((float) $variant->price, 0) }}</span>
+                            </button>
+                        @endforeach
+                    </div>
+                @endif
+
+                @foreach ($customizeAddonGroups as $group)
+                    @php $availableOptions = $group->options->where('is_available', true); @endphp
+                    <div wire:key="pos-addon-group-{{ $group->id }}" class="mt-4">
+                        <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                            {{ $group->name }}
+                            @if ($group->is_required)<span class="text-red-500">*</span>@endif
+                        </p>
+                        <div class="space-y-2">
+                            @foreach ($availableOptions as $option)
+                                @php $selected = in_array($option->id, $selectedAddonOptionIds, true); @endphp
+                                <button
+                                    wire:key="addon-{{ $option->id }}"
+                                    wire:click="toggleAddonOption({{ $group->id }}, {{ $option->id }})"
+                                    type="button"
+                                    @class([
+                                        'flex w-full items-center justify-between rounded-xl border-2 px-4 py-3 text-left transition',
+                                        'border-amber-500 bg-amber-50' => $selected,
+                                        'border-slate-200 hover:border-slate-300' => ! $selected,
+                                    ])
+                                >
+                                    <span class="font-medium text-slate-900">{{ $option->name }}</span>
+                                    @if ((float) $option->price > 0)
+                                        <span class="text-sm font-bold text-amber-600">+₹{{ number_format((float) $option->price, 0) }}</span>
+                                    @else
+                                        <span class="text-xs text-slate-400">Included</span>
+                                    @endif
+                                </button>
+                            @endforeach
+                        </div>
+                    </div>
+                @endforeach
+
+                <div class="mt-5 grid grid-cols-2 gap-2">
+                    <button wire:click="cancelCustomize" type="button" class="rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-600">Cancel</button>
+                    <button wire:click="confirmCustomize" type="button" class="rounded-xl bg-amber-500 py-3 text-sm font-bold text-white hover:bg-amber-600">Add to cart</button>
                 </div>
             </div>
         </div>

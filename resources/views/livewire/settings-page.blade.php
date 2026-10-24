@@ -89,6 +89,25 @@
             </div>
         </section>
 
+        {{-- Menu product form --}}
+        <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Menu item fields</h2>
+            <p class="mt-1 text-sm text-slate-500">Choose which options appear when creating or editing products. Name, category, price, and availability are always shown.</p>
+            <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                @foreach ($menuFieldLabels as $fieldKey => $fieldLabel)
+                    <label wire:key="menu-field-{{ $fieldKey }}" class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/50">
+                        <input
+                            wire:model="menu_product_fields.{{ $fieldKey }}"
+                            type="checkbox"
+                            class="mt-0.5 rounded border-slate-300 focus-brand dark:border-slate-600"
+                            style="accent-color: {{ $theme_color }}"
+                        >
+                        <span class="text-sm font-medium text-slate-900 dark:text-white">{{ $fieldLabel }}</span>
+                    </label>
+                @endforeach
+            </div>
+        </section>
+
         {{-- Business details --}}
         <section class="space-y-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6">
             <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Business Details</h2>

@@ -26,6 +26,8 @@ class OrderItem extends Model
         'discount_amount',
         'total',
         'notes',
+        'modifiers',
+        'modifiers_fingerprint',
         'status',
     ];
 
@@ -38,6 +40,7 @@ class OrderItem extends Model
             'tax_amount' => 'decimal:2',
             'discount_amount' => 'decimal:2',
             'total' => 'decimal:2',
+            'modifiers' => 'array',
         ];
     }
 

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\MenuProductFields;
 use Database\Factories\RestaurantFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -123,6 +124,17 @@ class Restaurant extends Model
     public function usesTables(): bool
     {
         return (bool) ($this->settings['tables_enabled'] ?? true);
+    }
+
+    /** @return array<string, bool> */
+    public function menuProductFields(): array
+    {
+        return MenuProductFields::resolve($this->settings['menu_product_fields'] ?? null);
+    }
+
+    public function menuProductFieldEnabled(string $field): bool
+    {
+        return MenuProductFields::enabled($this->settings['menu_product_fields'] ?? null, $field);
     }
 
     public function loyaltyEnabled(): bool
