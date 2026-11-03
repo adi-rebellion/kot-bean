@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Services\InventoryService;
+use App\Services\KitchenStockService;
 use App\Services\ReportService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
@@ -64,6 +65,7 @@ class DashboardPage extends Component
         $this->metrics = $reportService->getDashboardMetrics($restaurant);
         $this->bestSellers = $reportService->getBestSellers($restaurant, 8, $today, $endOfToday);
         $this->lowStockProducts = app(InventoryService::class)->getLowStockProducts($restaurant)->take(8);
+
         $this->paymentBreakdown = $reportService->getPaymentReport($restaurant, $today, $endOfToday);
         $this->recentOrders = $reportService->getRecentOrders($restaurant, $today, 10);
         $this->topCategories = $reportService->getTopCategoriesToday($restaurant, 5);
@@ -86,6 +88,18 @@ class DashboardPage extends Component
 
     public function render(): View
     {
-        return view('livewire.dashboard-page');
+        $restaurant = auth()->user()?->restaurant;
+        $canViewInventory = auth()->user()?->hasPermission('inventory.view') ?? false;
+        $kitchenStockService = app(KitchenStockService::class);
+
+        $kitchenRestockAlerts = ($canViewInventory && $restaurant)
+            ? $kitchenStockService->restockAlerts($restaurant)
+            : collect();
+
+        return view('livewire.dashboard-page', [
+            'kitchenRestockAlerts' => $kitchenRestockAlerts,
+            'kitchenStockService' => $kitchenStockService,
+            'canViewInventory' => $canViewInventory,
+        ]);
     }
 }

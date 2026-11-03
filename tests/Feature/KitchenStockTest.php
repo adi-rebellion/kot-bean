@@ -12,6 +12,8 @@ use App\Services\KitchenStockService;
 use Carbon\Carbon;
 use Database\Seeders\PermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
+use App\Livewire\DashboardPage;
 use Tests\TestCase;
 
 class KitchenStockTest extends TestCase
@@ -129,5 +131,33 @@ class KitchenStockTest extends TestCase
         $this->assertNotNull($best);
         $this->assertSame($cheap->id, $best->vendor_id);
         $this->assertSame('tel:+919876543210', app(KitchenStockService::class)->telLink($cheap));
+    }
+
+    public function test_dashboard_shows_kitchen_restock_alerts(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-11-07 10:00:00', 'Asia/Kolkata'));
+
+        $item = StockItem::create([
+            'restaurant_id' => $this->restaurant->id,
+            'name' => 'Cheese slices',
+            'unit' => 'slices',
+            'current_quantity' => 10,
+        ]);
+
+        StockDailyRecord::create([
+            'stock_item_id' => $item->id,
+            'record_date' => Carbon::parse('2026-11-01'),
+            'opening_quantity' => 50,
+            'restock_quantity' => 0,
+            'closing_quantity' => 15,
+            'used_quantity' => 35,
+        ]);
+
+        Livewire::actingAs($this->user)
+            ->test(DashboardPage::class)
+            ->assertSee('Kitchen restock')
+            ->assertSee('please restock');
+
+        Carbon::setTestNow();
     }
 }

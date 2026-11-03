@@ -20,6 +20,13 @@ class InventoryIndex extends Component
 
     public string $tab = 'menu';
 
+    public function mount(): void
+    {
+        if (request()->query('tab') === 'kitchen') {
+            $this->tab = 'kitchen';
+        }
+    }
+
     public bool $showAdjustForm = false;
 
     public ?int $productId = null;

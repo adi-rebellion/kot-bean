@@ -267,13 +267,52 @@
 
         {{-- Low stock alerts --}}
         <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div class="mb-4 flex items-center justify-between">
+            <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
                 <h2 class="text-lg font-semibold text-slate-900">Inventory Alerts</h2>
-                @if(($metrics['out_of_stock_count'] ?? 0) > 0)
-                    <span class="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700">{{ $metrics['out_of_stock_count'] }} out of stock</span>
-                @endif
-                <a href="{{ route('inventory.index') }}" wire:navigate class="text-sm font-medium text-amber-600 hover:text-amber-700">Manage →</a>
+                <div class="flex flex-wrap items-center gap-2">
+                    @if ($canViewInventory && $kitchenRestockAlerts->isNotEmpty())
+                        <span class="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">{{ $kitchenRestockAlerts->count() }} kitchen restock</span>
+                    @endif
+                    @if(($metrics['out_of_stock_count'] ?? 0) > 0)
+                        <span class="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700">{{ $metrics['out_of_stock_count'] }} out of stock</span>
+                    @endif
+                    <a href="{{ route('inventory.index') }}" wire:navigate class="text-sm font-medium text-amber-600 hover:text-amber-700">Menu stock →</a>
+                    @if ($canViewInventory)
+                        <a href="{{ route('inventory.index', ['tab' => 'kitchen']) }}" wire:navigate class="text-sm font-medium text-amber-600 hover:text-amber-700">Kitchen stock →</a>
+                    @endif
+                </div>
             </div>
+
+            @if ($canViewInventory && $kitchenRestockAlerts->isNotEmpty())
+                <div class="mb-6 space-y-3">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Kitchen restock (based on last week’s usage)</p>
+                    @foreach ($kitchenRestockAlerts as $alert)
+                        <div wire:key="dash-kitchen-alert-{{ $alert['stock_item']->id }}" class="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                            <p class="text-sm font-medium text-amber-950">{{ $alert['message'] }}</p>
+                            @if ($alert['best_vendor'])
+                                @php $vendor = $alert['best_vendor']->vendor; $tel = $kitchenStockService->telLink($vendor); @endphp
+                                <div class="mt-3 flex flex-wrap items-center gap-2">
+                                    <span class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700">
+                                        Best price: {{ $vendor->name }} — ₹{{ number_format((float) $alert['best_vendor']->unit_price, 2) }}
+                                        @if ($alert['best_vendor']->price_unit)
+                                            <span class="font-normal text-slate-500">({{ $alert['best_vendor']->price_unit }})</span>
+                                        @endif
+                                    </span>
+                                    @if ($tel)
+                                        <a href="{{ $tel }}" class="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-slate-800">
+                                            Call {{ $vendor->name }}
+                                        </a>
+                                    @endif
+                                </div>
+                            @else
+                                <a href="{{ route('inventory.index', ['tab' => 'kitchen']) }}" wire:navigate class="mt-2 inline-block text-xs font-semibold text-amber-800 underline">Add supplier prices in Kitchen stock</a>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+
+            <p class="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Menu products (low stock)</p>
             @if ($lowStockProducts->isNotEmpty())
                 <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                     @foreach ($lowStockProducts as $product)
