@@ -32,4 +32,9 @@ class Vendor extends Model
     {
         return $this->hasMany(Expense::class);
     }
+
+    public function stockItemPrices(): HasMany
+    {
+        return $this->hasMany(StockItemVendorPrice::class);
+    }
 }

@@ -1,10 +1,36 @@
 <div class="mx-auto max-w-7xl space-y-4 sm:space-y-6">
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 class="text-xl font-bold text-slate-900 sm:text-2xl">Inventory</h1>
-        @if ($canManage)
+        <div>
+            <h1 class="text-xl font-bold text-slate-900 sm:text-2xl">Inventory</h1>
+            <div class="mt-3 inline-flex rounded-xl bg-slate-100 p-1">
+                <button
+                    wire:click="$set('tab', 'menu')"
+                    type="button"
+                    @class([
+                        'rounded-lg px-4 py-2 text-sm font-semibold transition',
+                        'bg-white text-slate-900 shadow-sm' => $tab === 'menu',
+                        'text-slate-600 hover:text-slate-900' => $tab !== 'menu',
+                    ])
+                >Menu products</button>
+                <button
+                    wire:click="$set('tab', 'kitchen')"
+                    type="button"
+                    @class([
+                        'rounded-lg px-4 py-2 text-sm font-semibold transition',
+                        'bg-white text-slate-900 shadow-sm' => $tab === 'kitchen',
+                        'text-slate-600 hover:text-slate-900' => $tab !== 'kitchen',
+                    ])
+                >Kitchen stock</button>
+            </div>
+        </div>
+        @if ($canManage && $tab === 'menu')
             <button wire:click="openAdjustForm" type="button" class="rounded-lg bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-600">Adjust Stock</button>
         @endif
     </div>
+
+    @if ($tab === 'kitchen')
+        <livewire:inventory.kitchen-stock />
+    @else
 
     @if (session('success'))
         <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{{ session('success') }}</div>
@@ -140,4 +166,5 @@
             <div class="p-6 sm:p-8"><x-empty-state title="No transactions yet" /></div>
         @endif
     </div>
+    @endif
 </div>

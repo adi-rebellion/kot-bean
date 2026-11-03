@@ -18,6 +18,8 @@ class InventoryIndex extends Component
 {
     use WithPagination;
 
+    public string $tab = 'menu';
+
     public bool $showAdjustForm = false;
 
     public ?int $productId = null;

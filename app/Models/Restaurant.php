@@ -106,6 +106,11 @@ class Restaurant extends Model
         return $this->hasMany(Vendor::class);
     }
 
+    public function stockItems(): HasMany
+    {
+        return $this->hasMany(StockItem::class);
+    }
+
     public function aiImageGenerations(): HasMany
     {
         return $this->hasMany(AiImageGeneration::class);
