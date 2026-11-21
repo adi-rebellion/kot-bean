@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\MenuProductFields;
+use App\Support\Timezones;
 use Database\Factories\RestaurantFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -140,6 +141,11 @@ class Restaurant extends Model
     public function menuProductFieldEnabled(string $field): bool
     {
         return MenuProductFields::enabled($this->settings['menu_product_fields'] ?? null, $field);
+    }
+
+    public function resolvedTimezone(): string
+    {
+        return Timezones::resolve($this->timezone);
     }
 
     public function loyaltyEnabled(): bool

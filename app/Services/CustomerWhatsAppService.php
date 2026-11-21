@@ -31,7 +31,7 @@ class CustomerWhatsAppService
         $order->loadMissing('items');
         $customer->loadMissing('restaurant');
 
-        $timezone = $customer->restaurant->timezone ?? 'Asia/Kolkata';
+        $timezone = $customer->restaurant->resolvedTimezone();
         $orderDate = ($order->completed_at ?? $order->created_at)->timezone($timezone)->format('M j, Y');
 
         $items = $order->items

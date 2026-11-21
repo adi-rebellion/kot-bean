@@ -32,7 +32,7 @@ Route::get('/', function () {
         : view('welcome');
 })->name('home');
 
-Route::middleware(['auth', 'verified', 'restaurant.context'])->group(function () {
+Route::middleware(['auth', 'verified', 'restaurant.context', 'restaurant.timezone'])->group(function () {
     Route::post('/businesses', [BusinessController::class, 'store'])
         ->name('businesses.store');
 

@@ -142,8 +142,23 @@
                 </div>
             </div>
             <div>
-                <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Timezone</label>
-                <input wire:model="timezone" type="text" class="w-full rounded-lg border-slate-300 text-sm focus-brand focus:ring-2 dark:border-slate-700 dark:bg-slate-800 dark:text-white">
+                <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Timezone &amp; location</label>
+                <p class="mb-2 text-xs text-slate-500">Orders, reports, kitchen, and cash register times use this zone for your whole team.</p>
+                <select wire:model.live="timezone" class="w-full rounded-lg border-slate-300 text-sm focus-brand focus:ring-2 dark:border-slate-700 dark:bg-slate-800 dark:text-white">
+                    @foreach ($timezoneGroups as $region => $zones)
+                        <optgroup wire:key="tz-region-{{ $region }}" label="{{ $region }}">
+                            @foreach ($zones as $ianaId => $label)
+                                <option wire:key="tz-{{ $ianaId }}" value="{{ $ianaId }}">{{ $label }}</option>
+                            @endforeach
+                        </optgroup>
+                    @endforeach
+                </select>
+                @error('timezone') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                @if ($timezonePreview)
+                    <p class="mt-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-200">
+                        Preview: <span class="font-medium">{{ $timezonePreview }}</span>
+                    </p>
+                @endif
             </div>
             <div class="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/50">
                 <label class="flex cursor-pointer items-start gap-3">

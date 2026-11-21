@@ -61,6 +61,17 @@ class SettingsPageTest extends TestCase
         $this->assertFalse($this->restaurant->usesTables());
     }
 
+    public function test_owner_can_set_timezone_by_location(): void
+    {
+        Livewire::actingAs($this->user)
+            ->test(SettingsPage::class)
+            ->set('timezone', 'Asia/Kolkata')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertSame('Asia/Kolkata', $this->restaurant->fresh()->timezone);
+    }
+
     public function test_owner_can_upload_business_logo(): void
     {
         Storage::fake('public');

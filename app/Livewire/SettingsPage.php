@@ -3,7 +3,9 @@
 namespace App\Livewire;
 
 use App\Support\MenuProductFields;
+use App\Support\Timezones;
 use Illuminate\Contracts\View\View;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -73,7 +75,7 @@ class SettingsPage extends Component
             'email' => $restaurant->email ?? '',
             'gstin' => $restaurant->gstin ?? '',
             'default_tax_rate' => (string) ($restaurant->default_tax_rate ?? 0),
-            'timezone' => $restaurant->timezone ?? config('app.timezone'),
+            'timezone' => $restaurant->resolvedTimezone(),
             'tables_enabled' => $restaurant->usesTables(),
             'loyalty_enabled' => (bool) ($restaurant->settings['loyalty_enabled'] ?? false),
             'loyalty_points_per_100' => (string) ($restaurant->settings['loyalty_points_per_100'] ?? 1),
@@ -115,7 +117,7 @@ class SettingsPage extends Component
             'email' => 'nullable|email|max:255',
             'gstin' => 'nullable|string|max:20',
             'default_tax_rate' => 'nullable|numeric|min:0|max:100',
-            'timezone' => 'required|string|max:50',
+            'timezone' => ['required', 'string', Rule::in(Timezones::allowedIdentifiers())],
             'loyalty_points_per_100' => 'nullable|integer|min:1|max:100',
             'loyalty_rupees_per_point' => 'nullable|numeric|min:0.01|max:1000',
             'theme_color' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
@@ -173,6 +175,10 @@ class SettingsPage extends Component
     {
         return view('livewire.settings-page', [
             'menuFieldLabels' => MenuProductFields::labels(),
+            'timezoneGroups' => Timezones::curatedGroups(),
+            'timezonePreview' => Timezones::isValidPhpZone($this->timezone)
+                ? Timezones::preview($this->timezone)
+                : '',
         ]);
     }
 }
