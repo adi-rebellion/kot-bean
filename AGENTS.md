@@ -174,4 +174,21 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - Rerun a test after each change to it.
 - Run `vendor/bin/phpunit` to call the test runner directly. It accepts the same file path and `--filter=testName` arguments.
 
+## Devon skills (product and delivery)
+
+This repo vendors the same `devon-*` Cursor skills as **hcn_fabrixmed** under `.agents/skills/` (mirrored under `.claude/skills/` for Claude Code). Prefer these when the work matches their descriptions:
+
+- `devon-project-manager` — planning, sequencing, handoffs, cross-cutting work.
+- `devon-builder` — building product flows and interfaces with UX and evidence discipline.
+- `devon-ux-council` — UX review before meaningful UI or journey changes.
+- `devon-release` — release readiness and evidence, not “compiles locally”.
+- `devon-growth-hacker` + `devon-copywriter` — GTM, positioning, or conversion copy (use both for substantive commercial or public-facing copy).
+- `devon-cofounder` — major business, pricing, or strategic forks.
+
+Read the relevant `SKILL.md` in full before acting; do not substitute this summary.
+
+Lock file: `.agents/skills.lock.yaml`. After editing any `devon-*` skill, refresh the per-file `sha256` entries and run `.agents/skills/verify-devon-skills.sh`. Keep `.claude/skills/devon-*` in sync when you change `.agents/skills/devon-*`.
+
+**Note:** Devon skills may reference **hcn_fabrixmed** artifacts (for example `master_execution_plan.md`, `.thisrepo/`). This Laravel app does not ship those paths unless you add them; adapt the workflow to this repo’s docs and tickets, or link out to the owning repo when work spans both codebases.
+
 </laravel-boost-guidelines>

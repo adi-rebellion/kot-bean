@@ -1,0 +1,32 @@
+version: 1
+namespace: devon
+source: repository-local
+skills:
+  devon-cofounder:
+    path: .agents/skills/devon-cofounder/SKILL.md
+    version: 1.0.0
+    sha256: 13b3e35572e81609bc4fd415dc0aaf5836576bf0d71b9119f44e1879da665964
+  devon-builder:
+    path: .agents/skills/devon-builder/SKILL.md
+    version: 1.0.0
+    sha256: 0a54df923d610ca6e8ecd9e34dfcb2468fb7691c921fe64c8cf973eddc598ab7
+  devon-project-manager:
+    path: .agents/skills/devon-project-manager/SKILL.md
+    version: 1.0.0
+    sha256: 03d35a9aca3aa4a44a41af7c5480be651b189f5643c34610aa881d5813084003
+  devon-ux-council:
+    path: .agents/skills/devon-ux-council/SKILL.md
+    version: 1.0.0
+    sha256: aff5bc15e9063ddf177892aea4c167bf9f52cc97cc187f04170061e45a5588c8
+  devon-release:
+    path: .agents/skills/devon-release/SKILL.md
+    version: 1.0.0
+    sha256: 94b23dfe686ff8fbe9266e87f052168143a45ebb09d021b21ae02152da97afaa
+  devon-copywriter:
+    path: .agents/skills/devon-copywriter/SKILL.md
+    version: 1.0.0
+    sha256: 70d3ff4b51c75f3739036651619fbf59643c9184fcb3fbd1eb255ee7d08a42bd
+  devon-growth-hacker:
+    path: .agents/skills/devon-growth-hacker/SKILL.md
+    version: 1.0.0
+    sha256: 496622b5669d14e13020b7dcb22669140e70a9ba4b668f9dd103ce58e8be8c8a

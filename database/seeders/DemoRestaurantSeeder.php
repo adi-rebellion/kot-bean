@@ -2,15 +2,12 @@
 
 namespace Database\Seeders;
 
-use App\Enums\InventoryTransactionType;
 use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
 use App\Enums\TableStatus;
-use App\Models\Category;
 use App\Models\Customer;
 use App\Models\Expense;
-use App\Models\InventoryTransaction;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
@@ -23,8 +20,6 @@ use App\Models\User;
 use App\Services\RestaurantWorkspaceService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
-
 class DemoRestaurantSeeder extends Seeder
 {
     public function run(): void
@@ -43,8 +38,8 @@ class DemoRestaurantSeeder extends Seeder
 
         $roles = $this->createRoles($restaurant);
         $this->createUsers($restaurant, $roles);
-        $categories = $this->createCategories($restaurant);
-        $products = $this->createProducts($restaurant, $categories);
+        $this->call(CafeMenuSeeder::class);
+        $products = Product::query()->where('restaurant_id', $restaurant->id)->get()->all();
         $this->createTables($restaurant);
         $this->createCustomers($restaurant);
         $this->createHistoricalOrders($restaurant, $products, $roles['owner']);
@@ -102,96 +97,6 @@ class DemoRestaurantSeeder extends Seeder
 
             $workspaces->attach($user, $restaurant, $roles[$userData['role']]);
         }
-    }
-
-    private function createCategories(Restaurant $restaurant): array
-    {
-        $names = ['Coffee', 'Cold Coffee', 'Tea', 'Snacks', 'Bakery', 'Desserts'];
-        $categories = [];
-
-        foreach ($names as $index => $name) {
-            $categories[$name] = Category::create([
-                'restaurant_id' => $restaurant->id,
-                'name' => $name,
-                'slug' => Str::slug($name),
-                'sort_order' => $index,
-                'is_active' => true,
-            ]);
-        }
-
-        return $categories;
-    }
-
-    private function createProducts(Restaurant $restaurant, array $categories): array
-    {
-        $menu = [
-            'Coffee' => [
-                ['Espresso', 80, 25, 30],
-                ['Americano', 100, 30, 25],
-                ['Cappuccino', 160, 45, 18],
-                ['Latte', 150, 42, 22],
-                ['Mocha', 180, 55, 15],
-            ],
-            'Cold Coffee' => [
-                ['Vietnamese Iced Coffee', 140, 48, 7],
-                ['Cold Brew', 130, 40, 0],
-                ['Iced Latte', 160, 50, 20],
-            ],
-            'Tea' => [
-                ['Masala Tea', 60, 15, 40],
-                ['Green Tea', 70, 18, 35],
-                ['Chai Latte', 120, 35, 28],
-            ],
-            'Snacks' => [
-                ['Veg Sandwich', 120, 40, 12],
-                ['Grilled Cheese', 140, 50, 10],
-            ],
-            'Bakery' => [
-                ['Croissant', 120, 35, 16],
-                ['Chocolate Muffin', 90, 28, 20],
-            ],
-            'Desserts' => [
-                ['Brownie', 100, 30, 14],
-                ['Cheesecake', 180, 70, 8],
-            ],
-        ];
-
-        $products = [];
-        $sortOrder = 0;
-
-        foreach ($menu as $categoryName => $items) {
-            foreach ($items as [$name, $price, $cost, $stock]) {
-                $product = Product::create([
-                    'restaurant_id' => $restaurant->id,
-                    'category_id' => $categories[$categoryName]->id,
-                    'name' => $name,
-                    'slug' => Str::slug($name),
-                    'description' => "Freshly prepared {$name} at Bean & Brew Café.",
-                    'sku' => 'BB-'.strtoupper(Str::random(6)),
-                    'price' => $price,
-                    'cost_price' => $cost,
-                    'stock' => $stock,
-                    'min_stock' => 5,
-                    'preparation_time' => rand(3, 12),
-                    'is_available' => $stock > 0,
-                    'sort_order' => $sortOrder++,
-                ]);
-
-                InventoryTransaction::create([
-                    'restaurant_id' => $restaurant->id,
-                    'product_id' => $product->id,
-                    'type' => InventoryTransactionType::OpeningStock,
-                    'quantity' => $stock,
-                    'previous_stock' => 0,
-                    'new_stock' => $stock,
-                    'reason' => 'Initial stock',
-                ]);
-
-                $products[] = $product;
-            }
-        }
-
-        return $products;
     }
 
     private function createTables(Restaurant $restaurant): void
