@@ -80,4 +80,43 @@ class CafeMenuSeederTest extends TestCase
 
         $this->assertSame(12, Product::query()->where('restaurant_id', $restaurant->id)->count());
     }
+
+    public function test_seeder_restores_soft_deleted_product_with_same_slug(): void
+    {
+        $restaurant = Restaurant::create([
+            'name' => 'Mr Bean Coffee Co.',
+            'slug' => 'mr-bean-coffee-co',
+        ]);
+
+        $category = \App\Models\Category::create([
+            'restaurant_id' => $restaurant->id,
+            'name' => 'Hot Beverages',
+            'slug' => 'hot-beverages',
+        ]);
+
+        $existing = Product::create([
+            'restaurant_id' => $restaurant->id,
+            'category_id' => $category->id,
+            'name' => 'Old Hot Filter Coffee',
+            'slug' => 'hot-filter-coffee',
+            'price' => 50,
+            'stock' => 1,
+            'track_inventory' => true,
+            'is_available' => true,
+        ]);
+
+        $existing->delete();
+
+        $this->seed(CafeMenuSeeder::class);
+
+        $restored = Product::query()
+            ->where('restaurant_id', $restaurant->id)
+            ->where('slug', 'hot-filter-coffee')
+            ->first();
+
+        $this->assertNotNull($restored);
+        $this->assertNull($restored->deleted_at);
+        $this->assertSame('Hot Filter Coffee', $restored->name);
+        $this->assertSame('59.00', (string) $restored->price);
+    }
 }

@@ -105,28 +105,21 @@ class CafeMenuSeeder extends Seeder
             foreach ($items as $item) {
                 $slug = $item['slug'] ?? Str::slug($item['name']);
 
-                $product = Product::updateOrCreate(
-                    [
-                        'restaurant_id' => $restaurant->id,
-                        'slug' => $slug,
-                    ],
-                    [
-                        'category_id' => $category->id,
-                        'name' => $item['name'],
-                        'description' => null,
-                        'price' => $item['price'],
-                        'cost_price' => 0,
-                        'stock' => $item['stock'],
-                        'min_stock' => 5,
-                        'preparation_time' => 10,
-                        'has_variants' => false,
-                        'track_inventory' => true,
-                        'is_available' => true,
-                        'sort_order' => $productSort++,
-                    ],
-                );
+                [$product, $created] = $this->upsertProduct($restaurant->id, $category->id, $slug, [
+                    'name' => $item['name'],
+                    'description' => null,
+                    'price' => $item['price'],
+                    'cost_price' => 0,
+                    'stock' => $item['stock'],
+                    'min_stock' => 5,
+                    'preparation_time' => 10,
+                    'has_variants' => false,
+                    'track_inventory' => true,
+                    'is_available' => true,
+                    'sort_order' => $productSort++,
+                ]);
 
-                if ($product->wasRecentlyCreated) {
+                if ($created) {
                     InventoryTransaction::create([
                         'restaurant_id' => $restaurant->id,
                         'product_id' => $product->id,
@@ -173,5 +166,39 @@ class CafeMenuSeeder extends Seeder
 
         return Restaurant::query()->where('slug', 'bean-brew-cafe')->first()
             ?? Restaurant::query()->orderBy('id')->first();
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     * @return array{0: Product, 1: bool}
+     */
+    private function upsertProduct(int $restaurantId, int $categoryId, string $slug, array $attributes): array
+    {
+        $product = Product::withoutGlobalScopes()
+            ->withTrashed()
+            ->where('restaurant_id', $restaurantId)
+            ->where('slug', $slug)
+            ->first();
+
+        $payload = [
+            ...$attributes,
+            'restaurant_id' => $restaurantId,
+            'category_id' => $categoryId,
+            'slug' => $slug,
+        ];
+
+        if ($product) {
+            if ($product->trashed()) {
+                $product->restore();
+            }
+
+            $product->update($payload);
+
+            return [$product->fresh(), false];
+        }
+
+        $product = Product::withoutGlobalScopes()->create($payload);
+
+        return [$product, true];
     }
 }
