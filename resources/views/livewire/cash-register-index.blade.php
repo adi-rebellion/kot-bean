@@ -1,7 +1,12 @@
 <div class="mx-auto max-w-7xl space-y-4 sm:space-y-6">
-    <div>
-        <h1 class="text-xl font-bold text-slate-900 sm:text-2xl">Cash Register</h1>
-        <p class="text-sm text-slate-500">Open the register in the morning and close it at end of day.</p>
+    <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+            <h1 class="text-xl font-bold text-slate-900 sm:text-2xl">Cash Register</h1>
+            <p class="text-sm text-slate-500">Open the register in the morning and close it at end of day.</p>
+        </div>
+        @if (auth()->user()->hasPermission('reports.view'))
+            <a href="{{ route('daily-sales.index') }}" wire:navigate class="text-sm font-medium text-amber-600 hover:text-amber-700">Daily sales ledger →</a>
+        @endif
     </div>
 
     @if (session('success'))

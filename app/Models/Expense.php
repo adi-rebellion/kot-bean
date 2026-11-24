@@ -28,6 +28,8 @@ class Expense extends Model
         'paid_at',
         'notes',
         'created_by',
+        'paid_by_user_id',
+        'pending_on_user_id',
     ];
 
     protected function casts(): array
@@ -50,6 +52,16 @@ class Expense extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function paidBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'paid_by_user_id');
+    }
+
+    public function pendingOn(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'pending_on_user_id');
     }
 
     protected function balanceDue(): Attribute

@@ -38,6 +38,10 @@ class ExpensesIndex extends Component
 
     public string $notes = '';
 
+    public ?int $paid_by_user_id = null;
+
+    public ?int $pending_on_user_id = null;
+
     public function mount(): void
     {
         $this->expense_date = now()->toDateString();
@@ -63,6 +67,8 @@ class ExpensesIndex extends Component
         $this->expense_date = $expense->expense_date->toDateString();
         $this->due_date = $expense->due_date?->toDateString() ?? '';
         $this->notes = $expense->notes ?? '';
+        $this->paid_by_user_id = $expense->paid_by_user_id;
+        $this->pending_on_user_id = $expense->pending_on_user_id;
         $this->showForm = true;
     }
 
@@ -80,7 +86,9 @@ class ExpensesIndex extends Component
 
     public function save(): void
     {
-        $restaurantId = auth()->user()->restaurant_id;
+        $restaurant = auth()->user()->restaurant;
+        $restaurantId = $restaurant->id;
+        $staffIds = app(ExpenseService::class)->staffForRestaurant($restaurant)->pluck('id')->all();
 
         $rules = [
             'title' => ['required', 'string', 'max:255'],
@@ -94,6 +102,8 @@ class ExpensesIndex extends Component
             'expense_date' => ['required', 'date'],
             'due_date' => ['nullable', 'date'],
             'notes' => ['nullable', 'string'],
+            'paid_by_user_id' => ['nullable', 'integer', Rule::in($staffIds)],
+            'pending_on_user_id' => ['nullable', 'integer', Rule::in($staffIds)],
         ];
 
         if ($this->payment_status === ExpensePaymentStatus::Partial->value) {
@@ -108,6 +118,8 @@ class ExpensesIndex extends Component
         }
 
         $data['due_date'] = $this->due_date !== '' ? $this->due_date : null;
+        $data['paid_by_user_id'] = $this->paid_by_user_id;
+        $data['pending_on_user_id'] = $this->pending_on_user_id;
 
         $service = app(ExpenseService::class);
 
@@ -148,13 +160,19 @@ class ExpensesIndex extends Component
         $this->expense_date = now()->toDateString();
         $this->due_date = '';
         $this->notes = '';
+        $this->paid_by_user_id = null;
+        $this->pending_on_user_id = null;
     }
 
     public function render(): View
     {
+        $restaurant = auth()->user()->restaurant;
+        $expenseService = app(ExpenseService::class);
+
         return view('livewire.expenses-index', [
-            'expenses' => app(ExpenseService::class)->listForRestaurant(auth()->user()->restaurant),
-            'vendors' => app(VendorService::class)->listForRestaurant(auth()->user()->restaurant),
+            'expenses' => $expenseService->listForRestaurant($restaurant),
+            'vendors' => app(VendorService::class)->listForRestaurant($restaurant),
+            'staffMembers' => $expenseService->staffForRestaurant($restaurant),
             'paymentStatuses' => ExpensePaymentStatus::cases(),
             'totalExpenses' => Expense::query()->sum('amount'),
         ]);

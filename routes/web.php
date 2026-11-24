@@ -5,6 +5,7 @@ use App\Http\Controllers\PrintController;
 use App\Http\Controllers\PwaController;
 use App\Http\Controllers\ReportExportController;
 use App\Livewire\CashRegisterIndex;
+use App\Livewire\DailySalesLedgerIndex;
 use App\Livewire\CustomersIndex;
 use App\Livewire\DashboardPage;
 use App\Livewire\ExpensesIndex;
@@ -18,6 +19,7 @@ use App\Livewire\PosPage;
 use App\Livewire\PromotionsIndex;
 use App\Livewire\ReportsIndex;
 use App\Livewire\SettingsPage;
+use App\Livewire\StaffExpenseLedger;
 use App\Livewire\StaffIndex;
 use App\Livewire\TablesIndex;
 use App\Livewire\VendorLedger;
@@ -95,6 +97,10 @@ Route::middleware(['auth', 'verified', 'restaurant.context', 'restaurant.timezon
         ->middleware('permission:payments.process')
         ->name('cash-register.index');
 
+    Route::livewire('/daily-sales', DailySalesLedgerIndex::class)
+        ->middleware('permission:reports.view')
+        ->name('daily-sales.index');
+
     Route::livewire('/reports', ReportsIndex::class)
         ->middleware('permission:reports.view')
         ->name('reports.index');
@@ -106,6 +112,10 @@ Route::middleware(['auth', 'verified', 'restaurant.context', 'restaurant.timezon
     Route::livewire('/expenses', ExpensesIndex::class)
         ->middleware('permission:expenses.view')
         ->name('expenses.index');
+
+    Route::livewire('/expenses/staff-ledger', StaffExpenseLedger::class)
+        ->middleware('permission:expenses.view')
+        ->name('expenses.staff-ledger');
 
     Route::livewire('/vendors', VendorsIndex::class)
         ->middleware('permission:expenses.view')

@@ -5,6 +5,7 @@
             <p class="text-sm text-slate-500">Total: <span class="font-semibold text-amber-600">₹{{ number_format((float) $totalExpenses, 2) }}</span></p>
         </div>
         <div class="flex flex-col gap-2 sm:flex-row">
+            <a href="{{ route('expenses.staff-ledger') }}" wire:navigate class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Staff Ledger</a>
             <a href="{{ route('vendors.ledger') }}" wire:navigate class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Vendor Ledger</a>
             <button wire:click="create" type="button" class="rounded-lg bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-600 sm:w-auto">Add Expense</button>
         </div>
@@ -73,6 +74,28 @@
                     <label class="mb-1 block text-sm font-medium text-slate-700">Expense Date</label>
                     <input wire:model="expense_date" type="date" class="w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
                 </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Paid by</label>
+                    <select wire:model="paid_by_user_id" class="w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
+                        <option value="">— Not set —</option>
+                        @foreach ($staffMembers as $member)
+                            <option value="{{ $member->id }}">{{ $member->name }}</option>
+                        @endforeach
+                    </select>
+                    @error('paid_by_user_id') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                    <p class="mt-1 text-xs text-slate-400">Staff who paid or advanced this amount.</p>
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-slate-700">Pending on</label>
+                    <select wire:model="pending_on_user_id" class="w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500">
+                        <option value="">— Not set —</option>
+                        @foreach ($staffMembers as $member)
+                            <option value="{{ $member->id }}">{{ $member->name }}</option>
+                        @endforeach
+                    </select>
+                    @error('pending_on_user_id') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                    <p class="mt-1 text-xs text-slate-400">Who must clear or reimburse this expense.</p>
+                </div>
                 <div class="sm:col-span-2">
                     <label class="mb-1 block text-sm font-medium text-slate-700">Notes</label>
                     <textarea wire:model="notes" rows="2" class="w-full rounded-lg border-slate-300 text-sm focus:border-amber-500 focus:ring-amber-500"></textarea>
@@ -95,6 +118,13 @@
                             <p class="text-sm text-slate-500">{{ $expense->expense_date->format('M j, Y') }} · {{ $expense->category }}</p>
                             @if ($expense->vendor)
                                 <p class="text-sm text-slate-500">Vendor: {{ $expense->vendor->name }}</p>
+                            @endif
+                            @if ($expense->paidBy || $expense->pendingOn)
+                                <p class="text-sm text-slate-500">
+                                    @if ($expense->paidBy) Paid by {{ $expense->paidBy->name }}@endif
+                                    @if ($expense->paidBy && $expense->pendingOn) · @endif
+                                    @if ($expense->pendingOn) Pending on {{ $expense->pendingOn->name }}@endif
+                                </p>
                             @endif
                         </div>
                         <p class="shrink-0 text-lg font-bold text-amber-600">₹{{ number_format((float) $expense->amount, 2) }}</p>
@@ -127,6 +157,8 @@
                             <th class="px-4 py-3 text-left text-xs font-medium uppercase text-slate-500">Vendor</th>
                             <th class="px-4 py-3 text-left text-xs font-medium uppercase text-slate-500">Category</th>
                             <th class="px-4 py-3 text-left text-xs font-medium uppercase text-slate-500">Status</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium uppercase text-slate-500">Paid by</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium uppercase text-slate-500">Pending on</th>
                             <th class="px-4 py-3 text-right text-xs font-medium uppercase text-slate-500">Amount</th>
                             <th class="px-4 py-3 text-right text-xs font-medium uppercase text-slate-500">Actions</th>
                         </tr>
@@ -150,6 +182,8 @@
                                         —
                                     @endif
                                 </td>
+                                <td class="px-4 py-3 text-sm text-slate-600">{{ $expense->paidBy?->name ?? '—' }}</td>
+                                <td class="px-4 py-3 text-sm text-slate-600">{{ $expense->pendingOn?->name ?? '—' }}</td>
                                 <td class="px-4 py-3 text-right text-sm font-semibold text-amber-600">₹{{ number_format((float) $expense->amount, 2) }}</td>
                                 <td class="px-4 py-3 text-right text-sm">
                                     <button wire:click="edit({{ $expense->id }})" type="button" class="font-medium text-amber-600 hover:text-amber-700">Edit</button>
